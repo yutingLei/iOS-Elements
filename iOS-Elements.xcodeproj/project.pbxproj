@@ -8,12 +8,16 @@
 
 /* Begin PBXBuildFile section */
 		8425ECA5221BA4100056C9D7 /* iOS_Elements.h in Headers */ = {isa = PBXBuildFile; fileRef = 8425ECA3221BA4100056C9D7 /* iOS_Elements.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCE221BAC160056C9D7 /* ELColor.swift */; };
+		8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		8425ECA0221BA4100056C9D7 /* iOS_Elements.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = iOS_Elements.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8425ECA3221BA4100056C9D7 /* iOS_Elements.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iOS_Elements.h; sourceTree = "<group>"; };
 		8425ECA4221BA4100056C9D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8425ECCE221BAC160056C9D7 /* ELColor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ELColor.swift; sourceTree = "<group>"; };
+		8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ELColor+Extra.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,10 +50,28 @@
 		8425ECA2221BA4100056C9D7 /* iOS-Elements */ = {
 			isa = PBXGroup;
 			children = (
+				8425ECCC221BAC160056C9D7 /* Basic */,
 				8425ECA3221BA4100056C9D7 /* iOS_Elements.h */,
 				8425ECA4221BA4100056C9D7 /* Info.plist */,
 			);
 			path = "iOS-Elements";
+			sourceTree = "<group>";
+		};
+		8425ECCC221BAC160056C9D7 /* Basic */ = {
+			isa = PBXGroup;
+			children = (
+				8425ECCD221BAC160056C9D7 /* Color */,
+			);
+			path = Basic;
+			sourceTree = "<group>";
+		};
+		8425ECCD221BAC160056C9D7 /* Color */ = {
+			isa = PBXGroup;
+			children = (
+				8425ECCE221BAC160056C9D7 /* ELColor.swift */,
+				8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */,
+			);
+			path = Color;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -130,6 +152,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */,
+				8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
