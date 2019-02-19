@@ -10,6 +10,8 @@
 		8425ECA5221BA4100056C9D7 /* iOS_Elements.h in Headers */ = {isa = PBXBuildFile; fileRef = 8425ECA3221BA4100056C9D7 /* iOS_Elements.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCE221BAC160056C9D7 /* ELColor.swift */; };
 		8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */; };
+		8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECD3221BACD90056C9D7 /* ELIcons.swift */; };
+		8425ECD6221BB4080056C9D7 /* ELResources.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8425ECD5221BB4080056C9D7 /* ELResources.bundle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +20,8 @@
 		8425ECA4221BA4100056C9D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8425ECCE221BAC160056C9D7 /* ELColor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ELColor.swift; sourceTree = "<group>"; };
 		8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ELColor+Extra.swift"; sourceTree = "<group>"; };
+		8425ECD3221BACD90056C9D7 /* ELIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELIcons.swift; sourceTree = "<group>"; };
+		8425ECD5221BB4080056C9D7 /* ELResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = ELResources.bundle; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +57,7 @@
 				8425ECCC221BAC160056C9D7 /* Basic */,
 				8425ECA3221BA4100056C9D7 /* iOS_Elements.h */,
 				8425ECA4221BA4100056C9D7 /* Info.plist */,
+				8425ECD5221BB4080056C9D7 /* ELResources.bundle */,
 			);
 			path = "iOS-Elements";
 			sourceTree = "<group>";
@@ -60,6 +65,7 @@
 		8425ECCC221BAC160056C9D7 /* Basic */ = {
 			isa = PBXGroup;
 			children = (
+				8425ECD2221BACCD0056C9D7 /* Icons */,
 				8425ECCD221BAC160056C9D7 /* Color */,
 			);
 			path = Basic;
@@ -72,6 +78,14 @@
 				8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */,
 			);
 			path = Color;
+			sourceTree = "<group>";
+		};
+		8425ECD2221BACCD0056C9D7 /* Icons */ = {
+			isa = PBXGroup;
+			children = (
+				8425ECD3221BACD90056C9D7 /* ELIcons.swift */,
+			);
+			path = Icons;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +126,7 @@
 		8425EC97221BA4100056C9D7 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftUpdateCheck = 1010;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = Develop;
 				TargetAttributes = {
@@ -126,6 +141,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 8425EC96221BA4100056C9D7;
 			productRefGroup = 8425ECA1221BA4100056C9D7 /* Products */;
@@ -142,6 +158,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8425ECD6221BB4080056C9D7 /* ELResources.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +171,7 @@
 			files = (
 				8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */,
 				8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */,
+				8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
