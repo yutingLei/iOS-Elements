@@ -37,24 +37,3 @@ public class ELIcons: NSObject {
         }
     }
 }
-
-/// 扩展UIImage方法
-extension UIImage {
-    func withTintColor(_ color: UIColor) -> UIImage? {
-        /// Begin context
-        UIGraphicsBeginImageContextWithOptions(size, false, 0)
-
-        /// set fill color
-        color.setFill()
-        let rect = CGRect(origin: CGPoint.zero, size: size)
-
-        /// fill color
-        UIRectFill(rect)
-
-        /// Draw image
-        draw(in: rect, blendMode: .destinationIn, alpha: 1)
-        let result = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return result
-    }
-}
