@@ -15,7 +15,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		8425ECA0221BA4100056C9D7 /* iOS_Elements.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = iOS_Elements.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8425ECA0221BA4100056C9D7 /* Elements.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Elements.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8425ECA3221BA4100056C9D7 /* iOS_Elements.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iOS_Elements.h; sourceTree = "<group>"; };
 		8425ECA4221BA4100056C9D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8425ECCE221BAC160056C9D7 /* ELColor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ELColor.swift; sourceTree = "<group>"; };
@@ -46,7 +46,7 @@
 		8425ECA1221BA4100056C9D7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8425ECA0221BA4100056C9D7 /* iOS_Elements.framework */,
+				8425ECA0221BA4100056C9D7 /* Elements.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -117,7 +117,7 @@
 			);
 			name = "iOS-Elements";
 			productName = "iOS-Elements";
-			productReference = 8425ECA0221BA4100056C9D7 /* iOS_Elements.framework */;
+			productReference = 8425ECA0221BA4100056C9D7 /* Elements.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -317,8 +317,9 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.develop.iOS-Elements";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.develop.ios.elements;
+				PRODUCT_MODULE_NAME = Elements;
+				PRODUCT_NAME = Elements;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 4.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -342,8 +343,9 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.develop.iOS-Elements";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.develop.ios.elements;
+				PRODUCT_MODULE_NAME = Elements;
+				PRODUCT_NAME = Elements;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 4.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
