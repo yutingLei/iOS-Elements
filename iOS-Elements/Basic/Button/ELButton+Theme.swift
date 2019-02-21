@@ -10,7 +10,7 @@ import UIKit
 
 public class ELButtonTheme {
     /// 主要颜色
-    public var mainColor = UIColor.rgb(96, 98, 102)
+    var mainColor = UIColor.rgb(96, 98, 102)
 
     /// 标题颜色
     public var titleColor = UIColor.rgb(96, 98, 102)
@@ -37,7 +37,7 @@ public class ELButtonTheme {
     public var highlightIconColor: UIColor?
 
     /// 转换为朴素风格
-    public func convertToPlain(with style: ELButton.Style) {
+    func convertToPlain(with style: ELButton.Style) {
         switch style {
         case .text, .customer(_):
             print("'text', 'customer'不支持朴素风格...")

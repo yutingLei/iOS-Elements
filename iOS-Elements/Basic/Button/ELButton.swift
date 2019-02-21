@@ -162,19 +162,22 @@ public class ELButton: UIView {
 
     var _iconImageView: UIImageView?
     public var iconImage: UIImage? { get { return _iconImageView?.image } }
+
+    /// 设置按钮标题
     ///
-    /// 设置标题
-    ///
-    /// - Parameter text: 标题字符串
-    public func setTitle(_ text: String, atLeft: Bool = false) {
+    /// - Parameters:
+    ///   - text: 按钮标题
+    ///   - font: 按钮标题字体
+    ///   - atLeft: 按钮相对于icon位置,默认在icon右边
+    public func setTitle(_ text: String, withFont font: UIFont = UIFont.systemFont(ofSize: 15), atLeft: Bool = false) {
         if _titleLabel == nil {
             _titleLabel = UILabel()
-            _titleLabel?.font = UIFont.systemFont(ofSize: 15)
+            _titleLabel?.font = font
             addSubview(_titleLabel!)
         }
         let labelRect = (text as NSString).boundingRect(with: frame.size,
                                                         options: .usesLineFragmentOrigin,
-                                                        attributes: [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 15)],
+                                                        attributes: [NSAttributedString.Key.font: font],
                                                         context: nil)
         _titleLabel?.frame = labelRect
         _titleLabel?.center = CGPoint(x: bounds.midX, y: bounds.midY)
@@ -261,9 +264,7 @@ public class ELButton: UIView {
 
     /// 排列标题和icon
     func layoutTitleAndIcon(_ iconAtLeft: Bool) {
-        let titleLabelFrame = _titleLabel?.frame
-        let iconImageViewFrame = _iconImageView?.frame
-        if let tFrame = titleLabelFrame, let iFrame = iconImageViewFrame {
+        if let tFrame = _titleLabel?.frame, let iFrame = _iconImageView?.frame {
             let midX = bounds.midX
             let totalWidth = tFrame.width + iFrame.width
             var startX = midX - totalWidth / 2
