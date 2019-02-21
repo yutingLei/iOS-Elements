@@ -9,7 +9,7 @@
 import UIKit
 
 extension UIImage {
-    func render(with color: UIColor, toSize newSize: CGFloat?) -> UIImage? {
+    func render(with color: UIColor, blendMode: CGBlendMode = .destinationIn, toSize newSize: CGFloat? = nil) -> UIImage? {
 
         /// scale image?
         var renderSize = size
@@ -28,8 +28,7 @@ extension UIImage {
         UIRectFill(rect)
 
         /// Draw image
-        draw(in: rect, blendMode: .overlay, alpha: 1)
-        draw(in: rect, blendMode: .destinationIn, alpha: 1)
+        draw(in: rect, blendMode: blendMode, alpha: 1)
         let result = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         return result

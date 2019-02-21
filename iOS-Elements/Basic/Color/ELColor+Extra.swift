@@ -28,4 +28,19 @@ extension UIColor {
         let rgbaVal = values.map({ $0 > 1 ? $0 / 255.0 : $0 })
         return UIColor(red: rgbaVal[0], green: rgbaVal[1], blue: rgbaVal[2], alpha: rgbaVal[3])
     }
+
+    /// 使当前颜色变深
+    ///
+    /// - Parameter deep: 深度：r = r - deep
+    /// - Returns: 新和成的颜色对象
+    func makeDeep(_ deep: CGFloat = 0.1) -> UIColor {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        getRed(&red, green: &green, blue: &blue, alpha: nil)
+        red -= deep
+        green -= deep
+        blue -= deep
+        return UIColor.rgba(red, green, blue, 1)
+    }
 }
