@@ -15,7 +15,10 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         /// 测试ELButton
-        testELButton()
+        // testELButton()
+
+        /// 测试ELRadio
+        testELRadio()
     }
 
     func testELButton() {
@@ -117,6 +120,21 @@ class ViewController: UIViewController {
                                 ELIcons.get(.delete, withColor: UIColor.white)])
         elButtonGroup.setStyles([.success, .info, .warning])
         view.addSubview(elButtonGroup)
+    }
+
+    func testELRadio() {
+        let elRadio = ELRadio(title: "备选项")
+        elRadio.frame.origin = CGPoint(x: 100, y: 100)
+        view.addSubview(elRadio)
+
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
+            elRadio.isEnabled = false
+        }
+
+        let rect = CGRect.init(x: 5, y: 150, width: view.bounds.width - 10, height: 150)
+        if let elRadioGroup = ELRadioGroup(frame: rect, titles: ["备选项1", "备选项2", "备选项3"], horizontal: false) {
+            view.addSubview(elRadioGroup)
+        }
     }
 }
 
