@@ -2,27 +2,26 @@
 //  ELCheckbox.swift
 //  iOS-Elements
 //
-//  Created by conjur on 2019/2/21.
-//  ELRadio单选框
-//  ELRadioGroup 单选框管理组
+//  Created by conjur on 2019/3/3.
+//  ELCheckbox多选框
+//  ELCheckboxGroup多选框组
 //
 
 import UIKit
 
-public class ELRadio: ELSelection {
-
+public class ELCheckbox: ELSelection {
     //MARK: - Init
 
-    /// 初始化ELRadio
+    /// 初始化ELCheckbox
     ///
     /// - Parameters:
     ///   - title: 标题
     ///   - fontSize: 标题字体大小
     public init(title: String, fontSize: CGFloat = 14) {
-        super.init(frame: CGRect.zero, style: .radio, title: title, fontSize: fontSize)
+        super.init(frame: CGRect.zero, style: .checkbox, title: title, fontSize: fontSize)
 
         /// 添加选择指示器视图
-        _selectionIndicatorView = ELSelectionIndicatorView(style: .radio)
+        _selectionIndicatorView = ELSelectionIndicatorView(style: .checkbox)
         addSubview(_selectionIndicatorView!)
 
         /// 创建标题
@@ -33,39 +32,45 @@ public class ELRadio: ELSelection {
         fatalError("init(coder:) has not been implemented")
     }
 
-    //MARK: - Touch
+    //MARK: - Touch Delegate
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if !isSelected {
-            isSelected = true
-            unowned let weakSelf = self
-            onChange?(weakSelf)
+    }
+
+    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let touch = touches.first {
+            let point = touch.location(in: self)
+            if (bounds.contains(point)) {
+                unowned let weakSelf = self
+                onChange?(weakSelf)
+            }
         }
     }
 }
 
 /// ELRadioGroup为单选框管理器
 /// 由于选项默认可见，不宜过多，若选项过多，建议使用 ELSelect 选择器。
-public class ELRadioGroup: UIView {
+public class ELCheckboxGroup: UIView {
 
     /// 当前选中选项的下标
-    public var currentIndex: Int? {
+    public var selectedIndexes: [Int] {
         get {
-            for i in 0..<_radios.count {
-                if _radios[i].isSelected {
-                    return i
+            var indexes = [Int]()
+            for i in 0..<_checkboxs.count {
+                if _checkboxs[i].isSelected {
+                    indexes.append(i)
                 }
             }
-            return nil
+            return indexes
         }
     }
 
     /// 选择Radio的回调
-    public typealias ELRadioGroupHandler = ((ELRadio, Int, Bool) -> Void)
-    public var onRadioGroupChange: ELRadioGroupHandler?
+    public typealias ELCheckboxGroupHandler = ((ELCheckbox, Int, Bool) -> Void)
+    public var onCheckboxGroupChange: ELCheckboxGroupHandler?
 
     /// 管理选择框
     var _selections: [Bool]!
-    var _radios: [ELRadio]!
+    var _checkboxs: [ELCheckbox]!
 
     //MARK: - Init
 
@@ -88,16 +93,16 @@ public class ELRadioGroup: UIView {
         }
 
         super.init(frame: frame)
-        createRadios(with: titles, horizontal: horizontal)
+        createCheckboxs(with: titles, horizontal: horizontal)
     }
 
     /// 创建单选项
     ///
     /// - Parameter titles: 单选项标题
-    func createRadios(with titles: [String], horizontal: Bool) {
+    func createCheckboxs(with titles: [String], horizontal: Bool) {
         /// 初始化管理数组
         _selections = [Bool].init(repeating: false, count: titles.count)
-        _radios = [ELRadio]()
+        _checkboxs = [ELCheckbox]()
 
         /// 初始化单选项
         let fcount = CGFloat(titles.count)
@@ -109,13 +114,13 @@ public class ELRadioGroup: UIView {
             /// 创建选择框视图
             let container = UIView(frame: CGRect(x: x, y: y, width: w, height: h))
             container.addSubview({[unowned self] in
-                let elRadio = ELRadio(title: titles[i], fontSize: 14)
-                elRadio.center.x = elRadio.bounds.width / 2
-                elRadio.center.y = container.bounds.midY
-                elRadio.onChange = self.onChange
-                _radios.append(elRadio)
-                return elRadio
-            } ())
+                let elCheckbox = ELCheckbox(title: titles[i], fontSize: 14)
+                elCheckbox.center.x = elCheckbox.bounds.width / 2
+                elCheckbox.center.y = container.bounds.midY
+                elCheckbox.onChange = self.onChange
+                _checkboxs.append(elCheckbox)
+                return elCheckbox
+                } ())
             addSubview(container)
 
             if horizontal {
@@ -131,14 +136,12 @@ public class ELRadioGroup: UIView {
     }
 
     //MARK: - Observer
-    @objc func onChange(radio: ELSelection) {
-        let selectedIndex = _radios.firstIndex { $0 == radio }
+    @objc func onChange(checkbox: ELSelection) {
+        let selectedIndex = _checkboxs.firstIndex { $0 == checkbox }
 
         if let selectedIndex = selectedIndex {
-            for i in 0..<_radios.count {
-                _radios[i].isSelected = selectedIndex == i
-            }
-            onRadioGroupChange?(_radios[selectedIndex], selectedIndex, _radios[selectedIndex].isSelected)
+            _checkboxs[selectedIndex].isSelected = !_checkboxs[selectedIndex].isSelected
+            onCheckboxGroupChange?(_checkboxs[selectedIndex], selectedIndex, _checkboxs[selectedIndex].isSelected)
         }
     }
 }

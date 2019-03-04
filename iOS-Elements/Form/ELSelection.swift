@@ -8,26 +8,6 @@
 
 import UIKit
 
-/// 单选框/多选框 协议
-@objc public protocol ELSelectionDelegate: NSObjectProtocol {
-
-    /// 单选框状态变更触发
-    ///
-    /// - Parameter radio: 单选框对象
-    @objc optional func onRadioStatusChanged(_ radio: ELRadio)
-
-    /// 单选框组中的单选框状态变更触发
-    ///
-    /// - Parameters:
-    ///   - radioGroup: 单选框组对象
-    ///   - from: 当前单选框下标
-    ///   - to: 将要改变的单选框的下标
-    @objc optional func onRadioGroupStatusChanged(_ radioGroup: ELRadioGroup, from: Int, to: Int)
-
-//    @objc optional func onCheckboxStatusChanged(_ checkbox: ELCheckbox)
-//    @objc optional func onCheckboxGroupStatusChanged(_ checkboxGroup: ELCheckboxGroup, from: Int, to: Int)
-}
-
 /// 请使用子类ELRadio或ELCheckBox
 public class ELSelection: UIView {
 
@@ -204,7 +184,22 @@ class ELSelectionIndicatorView: UIView {
             layer.borderWidth = _isSelected ? 5 : 1
             layer.borderColor = (_isSelected ? _selectedColor : UIColor.rgb(96, 98, 102)).cgColor
         } else {
-
+            layer.borderWidth = _isSelected ? 0 : 1
+            layer.borderColor = _isSelected ? nil : UIColor.rgb(96, 98, 102).cgColor
+            let ctx = UIGraphicsGetCurrentContext()
+            if (_isSelected) {
+                ctx?.setFillColor(_selectedColor.cgColor)
+                ctx?.fill(bounds)
+                ctx?.setStrokeColor(UIColor.white.cgColor)
+                ctx?.setLineWidth(1)
+                ctx?.move(to: CGPoint.init(x: 3, y: 8))
+                ctx?.addLine(to: CGPoint.init(x: 6, y: 11))
+                ctx?.addLine(to: CGPoint.init(x: 13, y: 5))
+                ctx?.strokePath()
+            } else {
+                ctx?.setFillColor(UIColor.white.cgColor)
+                ctx?.fill(bounds)
+            }
         }
     }
 

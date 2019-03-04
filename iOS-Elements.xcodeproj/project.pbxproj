@@ -22,6 +22,7 @@
 		8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECD3221BACD90056C9D7 /* ELIcons.swift */; };
 		8425ECD6221BB4080056C9D7 /* ELResources.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8425ECD5221BB4080056C9D7 /* ELResources.bundle */; };
 		8425ED14221BD6420056C9D7 /* ELIcons+Extra.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ED13221BD6420056C9D7 /* ELIcons+Extra.swift */; };
+		84B8377A222B70F50011D1D2 /* ELCheckbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84B83779222B70F50011D1D2 /* ELCheckbox.swift */; };
 		84E2FAC0221FC45700D60360 /* ELSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84E2FABF221FC45700D60360 /* ELSelection.swift */; };
 		84EE4B0C221E755000165501 /* ELButtonGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84EE4B0B221E755000165501 /* ELButtonGroup.swift */; };
 /* End PBXBuildFile section */
@@ -45,6 +46,7 @@
 		8425ECD3221BACD90056C9D7 /* ELIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELIcons.swift; sourceTree = "<group>"; };
 		8425ECD5221BB4080056C9D7 /* ELResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = ELResources.bundle; sourceTree = "<group>"; };
 		8425ED13221BD6420056C9D7 /* ELIcons+Extra.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ELIcons+Extra.swift"; sourceTree = "<group>"; };
+		84B83779222B70F50011D1D2 /* ELCheckbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELCheckbox.swift; sourceTree = "<group>"; };
 		84E2FABF221FC45700D60360 /* ELSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELSelection.swift; sourceTree = "<group>"; };
 		84EE4B0B221E755000165501 /* ELButtonGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELButtonGroup.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -72,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				840CFA6D221E8B9F00058DFF /* ELRadio.swift */,
+				84B83779222B70F50011D1D2 /* ELCheckbox.swift */,
 				84E2FABF221FC45700D60360 /* ELSelection.swift */,
 			);
 			path = Form;
@@ -290,6 +293,7 @@
 				84EE4B0C221E755000165501 /* ELButtonGroup.swift in Sources */,
 				8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */,
 				84E2FAC0221FC45700D60360 /* ELSelection.swift in Sources */,
+				84B8377A222B70F50011D1D2 /* ELCheckbox.swift in Sources */,
 				8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */,
 				840CFA6E221E8B9F00058DFF /* ELRadio.swift in Sources */,
 				8425ED14221BD6420056C9D7 /* ELIcons+Extra.swift in Sources */,

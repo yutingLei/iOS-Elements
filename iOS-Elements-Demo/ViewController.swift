@@ -18,7 +18,10 @@ class ViewController: UIViewController {
         // testELButton()
 
         /// 测试ELRadio
-        testELRadio()
+        // testELRadio()
+
+        /// 测试ELCheckbox
+        testELCheckbox()
     }
 
     func testELButton() {
@@ -133,6 +136,17 @@ class ViewController: UIViewController {
 
         let rect = CGRect.init(x: 5, y: 150, width: view.bounds.width - 10, height: 150)
         if let elRadioGroup = ELRadioGroup(frame: rect, titles: ["备选项1", "备选项2", "备选项3"], horizontal: false) {
+            view.addSubview(elRadioGroup)
+        }
+    }
+
+    func testELCheckbox() {
+        let elCheckbox = ELCheckbox.init(title: "备选项")
+        elCheckbox.frame.origin = CGPoint.init(x: 100, y: 100)
+        view.addSubview(elCheckbox)
+
+        let rect = CGRect.init(x: 5, y: 150, width: view.bounds.width - 10, height: 150)
+        if let elRadioGroup = ELCheckboxGroup(frame: rect, titles: ["备选项1", "备选项2", "备选项3"], horizontal: false) {
             view.addSubview(elRadioGroup)
         }
     }
