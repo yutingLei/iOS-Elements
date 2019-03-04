@@ -70,10 +70,18 @@ public class ELButton: UIView {
         }
     }
 
+    /// 设置cornerRadius
+    public var isTinyRound: Bool = false {
+        willSet {
+            layer.cornerRadius = newValue ? 3 : (newValue ? (frame.height / 2) : 0)
+            layer.masksToBounds = true
+        }
+    }
+
     /// 按钮左右是否是圆弧形，默认false
     public var isRound: Bool = false {
         willSet {
-            layer.cornerRadius = newValue ? frame.height / 2 : 3
+            layer.cornerRadius = newValue ? (frame.height / 2) : (isTinyRound ? 3 : 0)
             layer.masksToBounds = true
         }
     }
@@ -214,17 +222,24 @@ public class ELButton: UIView {
     /// - Parameter frame: 视图的frame值
     public override init(frame: CGRect) {
         super.init(frame: frame)
-        style = _style
+    }
+
+    /// 快捷初始化方法
+    ///
+    /// - Parameter style: 按钮样式
+    public convenience init(style: ELButton.Style) {
+        self.init(frame: CGRect(x: 0, y: 0, width: 120, height: 45))
+        self.style = style
     }
 
     /// 快捷初始化方法
     ///
     /// - Parameters:
-    ///   - frame: 视图的frame值
-    ///   - onClick: 按钮点击回调
-    public convenience init(frame: CGRect, onClick: ((ELButton) -> Void)? = nil) {
+    ///   - frame: 按钮frame值
+    ///   - style: 按钮样式
+    public convenience init(frame: CGRect, withStyle style: ELButton.Style) {
         self.init(frame: frame)
-        self.onClick = onClick
+        self.style = style
     }
 
     required init?(coder aDecoder: NSCoder) {
