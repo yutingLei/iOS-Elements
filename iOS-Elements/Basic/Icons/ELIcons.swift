@@ -13,7 +13,7 @@ public class ELIcons: NSObject {
     static let iconsPath = Bundle(for: ELIcons.self).path(forResource: "ELResources", ofType: "bundle")
 
     /// 定义所有icons类型
-    public enum ELIconsType: String {
+    public enum Names: String {
         case info = "el-icon-info"
         case error = "el-icon-error"
         case success = "el-icon-success"
@@ -98,9 +98,9 @@ public class ELIcons: NSObject {
     ///   - tintColor: 绘制颜色, 不设置默认为black
     ///   - withSize: 绘制大小，不设置默认96x96
     /// - Returns: icon图片对象
-    public class func get(_ type: ELIconsType, withColor tintColor: UIColor? = nil, andSize size: CGFloat? = nil) -> UIImage? {
+    public class func get(_ name: Names, withColor tintColor: UIColor? = nil, andSize size: CGFloat? = nil) -> UIImage? {
         guard let iconsPath = iconsPath else { return nil }
-        let iconFilePath = URL(fileURLWithPath: iconsPath + "/" + type.rawValue + ".png")
+        let iconFilePath = URL(fileURLWithPath: iconsPath + "/" + name.rawValue + ".png")
         do {
             let iconData = try Data(contentsOf: iconFilePath)
             var icon = UIImage(data: iconData)

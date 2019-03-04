@@ -168,8 +168,7 @@ public class ELButton: UIView {
     /// - Parameters:
     ///   - text: 按钮标题
     ///   - font: 按钮标题字体
-    ///   - atLeft: 按钮相对于icon位置,默认在icon右边
-    public func setTitle(_ text: String, withFont font: UIFont = UIFont.systemFont(ofSize: 15), atLeft: Bool = false) {
+    public func setTitle(_ text: String, withFont font: UIFont = UIFont.systemFont(ofSize: 15)) {
         if _titleLabel == nil {
             _titleLabel = UILabel()
             _titleLabel?.font = font
@@ -182,7 +181,6 @@ public class ELButton: UIView {
         _titleLabel?.frame = labelRect
         _titleLabel?.center = CGPoint(x: bounds.midX, y: bounds.midY)
         _titleLabel?.text = text
-        layoutTitleAndIcon(atLeft)
         updateTheme()
     }
 
@@ -191,14 +189,14 @@ public class ELButton: UIView {
     /// - Parameters:
     ///   - image: 图片对象
     ///   - atLeft: 此图片相对标题位置
-    public func setIcon(_ image: UIImage, withSize: CGFloat = 20, atLeft: Bool = true) {
+    public func setIcon(_ image: UIImage, withSize size: CGFloat = 20, atLeft: Bool = true) {
         switch style {
         case .text:
             print("文字按钮不支持icon...")
             return
         default:
             if _iconImageView == nil {
-                _iconImageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 20, height: 20))
+                _iconImageView = UIImageView(frame: CGRect(x: 0, y: 0, width: size, height: size))
                 _iconImageView?.contentMode = .scaleAspectFill
                 addSubview(_iconImageView!)
             }
