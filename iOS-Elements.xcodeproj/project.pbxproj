@@ -18,7 +18,6 @@
 		84152D8B221D407C001A3242 /* Elements.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8425ECA0221BA4100056C9D7 /* Elements.framework */; };
 		8425ECA5221BA4100056C9D7 /* iOS_Elements.h in Headers */ = {isa = PBXBuildFile; fileRef = 8425ECA3221BA4100056C9D7 /* iOS_Elements.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCE221BAC160056C9D7 /* ELColor.swift */; };
-		8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */; };
 		8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECD3221BACD90056C9D7 /* ELIcons.swift */; };
 		8425ECD6221BB4080056C9D7 /* ELResources.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 8425ECD5221BB4080056C9D7 /* ELResources.bundle */; };
 		8425ED14221BD6420056C9D7 /* ELIcons+Extra.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ED13221BD6420056C9D7 /* ELIcons+Extra.swift */; };
@@ -42,7 +41,6 @@
 		8425ECA3221BA4100056C9D7 /* iOS_Elements.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iOS_Elements.h; sourceTree = "<group>"; };
 		8425ECA4221BA4100056C9D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8425ECCE221BAC160056C9D7 /* ELColor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ELColor.swift; sourceTree = "<group>"; };
-		8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ELColor+Extra.swift"; sourceTree = "<group>"; };
 		8425ECD3221BACD90056C9D7 /* ELIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELIcons.swift; sourceTree = "<group>"; };
 		8425ECD5221BB4080056C9D7 /* ELResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = ELResources.bundle; sourceTree = "<group>"; };
 		8425ED13221BD6420056C9D7 /* ELIcons+Extra.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ELIcons+Extra.swift"; sourceTree = "<group>"; };
@@ -155,7 +153,6 @@
 			isa = PBXGroup;
 			children = (
 				8425ECCE221BAC160056C9D7 /* ELColor.swift */,
-				8425ECCF221BAC160056C9D7 /* ELColor+Extra.swift */,
 			);
 			path = Color;
 			sourceTree = "<group>";
@@ -294,7 +291,6 @@
 				8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */,
 				84E2FAC0221FC45700D60360 /* ELSelection.swift in Sources */,
 				84B8377A222B70F50011D1D2 /* ELCheckbox.swift in Sources */,
-				8425ECD1221BAC160056C9D7 /* ELColor+Extra.swift in Sources */,
 				840CFA6E221E8B9F00058DFF /* ELRadio.swift in Sources */,
 				8425ED14221BD6420056C9D7 /* ELIcons+Extra.swift in Sources */,
 				8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */,
