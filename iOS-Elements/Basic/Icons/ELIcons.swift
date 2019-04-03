@@ -1,19 +1,15 @@
 //
 //  ELIcons.swift
-//  iOS-Elements
 //
 //  Created by conjur on 2019/2/19.
-//  定义常用图标
 //
 
 import UIKit
 
-public class ELIcons: NSObject {
-    /// icon资源文件地址
-    static let iconsPath = Bundle(for: ELIcons.self).path(forResource: "ELResources", ofType: "bundle")
-
+public extension ELIcon {
     /// 定义所有icons类型
-    public enum Names: String {
+    /// 参考地址：http://element-cn.eleme.io/#/zh-CN/component/icon
+    enum Name: String {
         case info = "el-icon-info"
         case error = "el-icon-error"
         case success = "el-icon-success"
@@ -44,12 +40,13 @@ public class ELIcons: NSObject {
         case circleCheckOutline = "el-icon-circle-check-outline"
         case zoomOut = "el-icon-zoom-out"
         case zoomIn = "el-icon-zoom-in"
-
+        
+        //TODO: - Waitint add
 //        case doubleCaret = "el-icon-d-caret"
 //        case sort = "el-icon-sort"
 //        case sortDown = "el-icon-sort-down"
 //        case sortUp = "el-icon-sort-up"
-
+        
         case tickets = "el-icon-tickets"
         case document = "el-icon-document"
         case goods = "el-icon-goods"
@@ -87,29 +84,102 @@ public class ELIcons: NSObject {
         case upload = "el-icon-upload"
         case upload2 = "el-icon-upload2"
         case download = "el-icon-download"
+        
+        //TODO: Waiting add
 //        case loading = "el-icon-loading"
     }
+    
+    /// 所有图标的名称
+    var availableNames: [String] {
+        get {
+            return [".info", ".error", ".success", ".warning", ".question", ".back",
+                    ".arrowLeft", ".arrowDown", ".arrowRight", ".arrowUp", ".caretLeft", ".caretBottom",
+                    ".caretTop", ".caretRight", ".doubleArrowLeft", ".doubleArrowRight", ".subtract", ".add",
+                    ".remove", ".circlePlus", ".removeOutline", ".circlePlusOutline", ".close", ".check",
+                    ".circleClose", ".circleCheck", ".circleCloseOutline", ".circleCheckOutline", ".zoomOut", ".zoomIn",
+                    ".tickets", ".document",
+                    ".goods", ".soldOut", ".news", ".message", ".date", ".printer",
+                    ".time", ".bell", ".mobilePhone", ".service", ".view", ".menu",
+                    ".more", ".moreOutline", ".starOn", ".starOff", ".location", ".locationOutline",
+                    ".phone", ".phoneOutline", ".picture", ".pictureOutline", ".delete", ".search",
+                    ".edit", ".editOutline", ".rank", ".refresh", ".share", ".setting",
+                    ".upload", ".upload2", ".download"]
+        }
+    }
+}
 
+public class ELIcon: UIImage {
+    
+    /// 资源地址
+    static let sourcePath = Bundle(for: ELIcon.self).path(forResource: "ELResources", ofType: "bundle")
 
-    /// 获取自带Icon图片
+    /// 获取图片
     ///
-    /// - Parameters:
-    ///   - type: icon类型
-    ///   - tintColor: 绘制颜色, 不设置默认为black
-    ///   - withSize: 绘制大小，不设置默认96x96
-    /// - Returns: icon图片对象
-    public class func get(_ name: Names, withColor tintColor: UIColor? = nil, andSize size: CGFloat? = nil) -> UIImage? {
-        guard let iconsPath = iconsPath else { return nil }
-        let iconFilePath = URL(fileURLWithPath: iconsPath + "/" + name.rawValue + ".png")
+    /// - Parameter name: icon名称
+    /// - Returns: 图片对象
+    public class func get(_ name: Name) -> ELIcon? {
+        guard let path = sourcePath else { return nil }
+        
+        // 文件路径
+        let fileURL = URL(fileURLWithPath: "\(path)/\(name.rawValue).png")
+        
+        /// 获取文件
         do {
-            let iconData = try Data(contentsOf: iconFilePath)
-            var icon = UIImage(data: iconData)
-            if let tintColor = tintColor {
-                icon = icon?.render(with: tintColor, toSize: size)
-            }
-            return icon
+            let data = try Data(contentsOf: fileURL)
+            return ELIcon(data: data)
         } catch {
             return nil
         }
+    }
+}
+
+fileprivate extension ELIcon {
+    
+    /// 以给定颜色绘制
+    ///
+    /// - Parameter color: 绘制色
+    /// - Returns: 新的图片
+    func stroked(by color: UIColor) -> UIImage? {
+        
+        /// Begin context
+        UIGraphicsBeginImageContextWithOptions(size, false, 0)
+        
+        /// set fill color
+        color.setFill()
+        let rect = CGRect(origin: CGPoint.zero, size: size)
+        
+        /// fill color
+        UIRectFill(rect)
+        
+        /// Draw image
+        draw(in: rect, blendMode: .destinationIn, alpha: 1)
+        let result = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return result
+    }
+    
+    /// 缩放图片
+    ///
+    /// - Parameter newSize: 新图片的大小
+    /// - Returns: 新图片
+    func resize(to newSize: CGSize) -> UIImage? {
+        /// Begin context
+        UIGraphicsBeginImageContext(newSize)
+
+        let rect = CGRect(origin: CGPoint.zero, size: size)
+        
+        /// Draw image
+        draw(in: rect)
+        let result = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return result
+    }
+    
+    /// 等比缩放图片
+    ///
+    /// - Parameter size: 新图片大小
+    /// - Returns: 新图片
+    func scale(to size: CGFloat) -> UIImage? {
+        return resize(to: CGSize(width: size, height: size))
     }
 }
