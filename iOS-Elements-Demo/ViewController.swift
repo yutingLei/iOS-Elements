@@ -14,141 +14,57 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        /// 测试ELButton
-        // testELButton()
-
-        /// 测试ELRadio
-        // testELRadio()
-
-        /// 测试ELCheckbox
-        testELCheckbox()
+        elButtons()
     }
-
-    func testELButton() {
-        var x: CGFloat = 0
-        var y: CGFloat = 100
-        let w = view.bounds.width / 6
-        let h: CGFloat = 50
-        let styles: [ELButton.Style] = [.normal, .primary, .info, .success, .warning, .danger]
-
-        let contentView1 = UIView(frame: CGRect(x: x, y: y, width: view.bounds.width, height: h))
-        view.addSubview(contentView1)
-        for i in 0..<6 {
-            let elButton = ELButton(frame: CGRect(x: x + 5, y: 3, width: w - 10, height: 44))
-            elButton.style = styles[i]
-            elButton.setTitle("按钮")
-            contentView1.addSubview(elButton)
-            x += w
-        }
-
-        x = 0
-        y += 55
-        let contentView2 = UIView(frame: CGRect(x: x, y: y, width: view.bounds.width, height: h))
-        view.addSubview(contentView2)
-        for i in 0..<6 {
-            let elButton = ELButton(frame: CGRect(x: x + 5, y: 3, width: w - 10, height: 44))
-            elButton.style = styles[i]
-            elButton.isRound = true
-            elButton.setTitle("按钮")
-            contentView2.addSubview(elButton)
-            x += w
-        }
-
-        x = 0
-        y += 55
-        let contentView3 = UIView(frame: CGRect(x: x, y: y, width: view.bounds.width, height: h))
-        view.addSubview(contentView3)
-        for i in 0..<6 {
-            let elButton = ELButton(frame: CGRect(x: x + 5, y: 3, width: w - 10, height: 44))
-            elButton.style = styles[i]
-            elButton.isPlain = true
-            elButton.setTitle("按钮")
-            contentView3.addSubview(elButton)
-            x += w
-        }
-
-        x = 0
-        y += 55
-        let contentView4 = UIView(frame: CGRect(x: x, y: y, width: view.bounds.width, height: h))
-        view.addSubview(contentView4)
-        for i in 0..<6 {
-            let elButton = ELButton(frame: CGRect(x: x + 5, y: 3, width: w - 10, height: 44))
-            elButton.style = styles[i]
-            elButton.isCircle = true
-            elButton.setIcon(ELIcons.get(.search)!, atLeft: true)
-            contentView4.addSubview(elButton)
-            x += w
-        }
-
-        x = 0
-        y += 55
-        let contentView5 = UIView(frame: CGRect(x: x, y: y, width: view.bounds.width, height: h))
-        view.addSubview(contentView5)
-        for i in 0..<6 {
-            let elButton = ELButton(frame: CGRect(x: x + 5, y: 3, width: w - 10, height: 44))
-            elButton.style = styles[i]
-            elButton.isEnabled = false
-            elButton.setTitle("按钮")
-            contentView5.addSubview(elButton)
-            x += w
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-            (contentView5.subviews[1] as? ELButton)?.isEnabled = true
-            (contentView5.subviews[3] as? ELButton)?.isEnabled = true
-            (contentView5.subviews[5] as? ELButton)?.isEnabled = true
-        }
-
-        x = 0
-        y += 55
-        let elButton = ELButton(frame: CGRect(x: x + 5, y: y, width: view.bounds.width - 10, height: 45))
-        elButton.isRound = true
-        elButton.style = .customer({
-            let theme = ELButtonTheme()
-            theme.titleColor = UIColor.blue
-            theme.highlightTitleColor = UIColor.white
-            theme.backgroundColor = UIColor.green
-            theme.highlightBackgroundColor = UIColor.orange
-            theme.borderColor = UIColor.red
-            theme.highlightBorderColor = UIColor.purple
-            return theme
-            }())
-        elButton.setTitle("按钮")
-        view.addSubview(elButton)
-
-        y += 55
-        let elButtonGroup = ELButtonGroup(frame: CGRect(x: x + 5, y: y, width: view.bounds.width - 10, height: 45), count: 3)
-        elButtonGroup.setIcons([ELIcons.get(.edit, withColor: UIColor.white),
-                                ELIcons.get(.share, withColor: UIColor.white),
-                                ELIcons.get(.delete, withColor: UIColor.white)])
-        elButtonGroup.setStyles([.success, .info, .warning])
-        view.addSubview(elButtonGroup)
-    }
-
-    func testELRadio() {
-        let elRadio = ELRadio(title: "备选项")
-        elRadio.frame.origin = CGPoint(x: 100, y: 100)
-        view.addSubview(elRadio)
-
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-            elRadio.isEnabled = false
-        }
-
-        let rect = CGRect.init(x: 5, y: 150, width: view.bounds.width - 10, height: 150)
-        if let elRadioGroup = ELRadioGroup(frame: rect, titles: ["备选项1", "备选项2", "备选项3"], horizontal: false) {
-            view.addSubview(elRadioGroup)
+    
+    func elButtons() {
+        let properties = ["Nothing settings", "isTinyRound = true", "isRound = true", "isLoading = true", "isPlain = true", "With icon", "isCircle = true", "isImageInLeft = false"]
+        let allStyles: [[ELButton.Style]] = [[.normal, .primary], [.success, .info], [.warning, .danger], [.info, .success], [.warning, .danger], [.normal, .primary], [.success, .info], [.success, .info]]
+        let titles = [["默认按钮", "主要按钮"], ["成功按钮", "信息按钮"], ["警告按钮", "危险按钮"], ["信息按钮", "成功按钮"], ["警告按钮", "危险按钮"], ["默认按钮", "主要按钮"], ["成功按钮", "信息按钮"], ["成功按钮", "信息按钮"]]
+        let iconNames: [ELIcon.Name] = [.tickets, .bell]
+        var x: CGFloat = 20
+        var y: CGFloat = 80
+        let w = (view.bounds.width - 60) / 2
+        let h: CGFloat = 45
+        for i in 0..<properties.count {
+            let label = UILabel.init(frame: CGRect.init(x: x, y: y, width: 300, height: 25))
+            label.font = UIFont.boldSystemFont(ofSize: 18)
+            label.text = properties[i]
+            view.addSubview(label)
+            y += 25
+            
+            for j in 0..<allStyles[i].count {
+                let button = ELButton(frame: CGRect(x: x, y: y, width: w, height: h), withStyle: allStyles[i][j])
+                button.addTarget(self, action: #selector(onTouch), for: .touchUpInside)
+                button.setTitle(titles[i][j], for: .normal)
+                view.addSubview(button)
+                x += (w + 20)
+                
+                if i == 1 {
+                    button.isTinyRound = true
+                } else if i == 2 {
+                    button.isRound = true
+                } else if i == 3 {
+                    button.isLoading = true
+                } else if i == 4 {
+                    button.isPlain = true
+                } else if i == 5 {
+                    button.setImage(iconNames[j], for: .normal)
+                } else if i == 6 {
+                    button.isCircle = true
+                    button.setImage(iconNames[j], for: .normal)
+                } else if i == 7 {
+                    button.isImageInLeft = false
+                    button.setImage(iconNames[j], for: .normal)
+                }
+            }
+            x = 20
+            y += (h + 20)
         }
     }
-
-    func testELCheckbox() {
-        let elCheckbox = ELCheckbox.init(title: "备选项")
-        elCheckbox.frame.origin = CGPoint.init(x: 100, y: 100)
-        view.addSubview(elCheckbox)
-
-        let rect = CGRect.init(x: 5, y: 150, width: view.bounds.width - 10, height: 150)
-        if let elRadioGroup = ELCheckboxGroup(frame: rect, titles: ["备选项1", "备选项2", "备选项3"], horizontal: false) {
-            view.addSubview(elRadioGroup)
-        }
+    
+    @objc func onTouch() {
+        print("点击了默认按钮")
     }
 }
 

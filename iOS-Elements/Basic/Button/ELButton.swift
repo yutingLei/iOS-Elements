@@ -1,17 +1,14 @@
 //
 //  ELButton.swift
-//  iOS-Elements
 //
 //  Created by conjur on 2019/2/20.
-//  自定义按钮
 //
 
 import UIKit
 
-public class ELButton: UIView {
-
-    /// 定义按钮类型
-    public enum Style {
+public extension ELButton {
+    /// 按钮样式
+    enum Style {
         case normal
         case text
         case primary
@@ -19,316 +16,401 @@ public class ELButton: UIView {
         case info
         case warning
         case danger
-        case customer(ELButtonTheme)
+        case custom(Any)
     }
+}
 
-    //MARK: - Setter
-    /// 当前按钮风格
-    var _currentTheme: ELButtonTheme!
-
-    /// 设置按钮风格
-    var _style: Style = .normal
-
-    /// 按钮风格，默认'.text'
-    public var style: Style {
-        get { return _style }
-        set {
-            _style = newValue
-            switch newValue {
-            case .text:
-                _currentTheme = textTheme
-            case .primary:
-                _currentTheme = primaryTheme
-            case .success:
-                _currentTheme = successTheme
-            case .info:
-                _currentTheme = infoTheme
-            case .warning:
-                _currentTheme = warningTheme
-            case .danger:
-                _currentTheme = dangerTheme
-            case .customer(let theme):
-                _currentTheme = theme
-            default:
-                _currentTheme = normalTheme
-            }
+public class ELButton: UIButton {
+    
+    /// 按钮样式(default `.normal`)
+    private(set) public var style: Style!
+    
+    /// 按钮主题
+    private(set) public var theme: ELButtonTheme!
+    
+    /// 朴素按钮(default `false`)
+    public var isPlain: Bool! {
+        willSet {
+            newValue ? theme.plained() : theme.revertPlain()
+            setTitleColor(theme.textColor, for: .normal)
+            setTitleColor(theme.highlightTextColor, for: .highlighted)
+            setImage(imageView?.image, for: .normal)
+            setImage(imageView?.image, for: .highlighted)
             updateTheme()
         }
     }
-
-    /// 是否为朴素按钮，默认为nil
-    public var isPlain: Bool? {
-        didSet {
-            if let _isPlain = isPlain {
-                if _isPlain {
-                    _currentTheme.convertToPlain(with: _style)
-                } else {
-                    _currentTheme.revertFromPlain(with: _style)
-                }
-                updateTheme()
-            }
-        }
-    }
-
-    /// 设置cornerRadius
-    public var isTinyRound: Bool = false {
+    
+    /// 微微圆角(default `true`)
+    public var isTinyRound: Bool! {
         willSet {
-            layer.cornerRadius = newValue ? 3 : (newValue ? (frame.height / 2) : 0)
+            layer.cornerRadius = newValue ? 5 : (isRound ? bounds.height / 2 : 0)
             layer.masksToBounds = true
         }
     }
-
-    /// 按钮左右是否是圆弧形，默认false
-    public var isRound: Bool = false {
+    
+    /// 圆角(default `false`)
+    public var isRound: Bool! {
         willSet {
-            layer.cornerRadius = newValue ? (frame.height / 2) : (isTinyRound ? 3 : 0)
+            layer.cornerRadius = newValue ? bounds.height / 2 : (isTinyRound ? 5 : 0)
             layer.masksToBounds = true
         }
     }
-
-    /// 当该属性为true时，ELButton的宽高将变为一致(取两者之间最小)变为圆形
-    /// 请注意：此设置不可逆，默认false
-    public var isCircle: Bool = false {
+    
+    /// 圆形(default `false`)，注意：设置true后无法恢复，谨慎使用
+    public var isCircle: Bool! {
         willSet {
-            /// 设置大小并改变圆角
-            let minWidthHeight = min(frame.width, frame.height)
-            frame.size = CGSize(width: minWidthHeight, height: minWidthHeight)
-            layer.cornerRadius = minWidthHeight / 2
-            layer.masksToBounds = true
-
-            /// 在有icon和标题时，隐藏标题
             if newValue {
-                _titleLabel?.isHidden = true
-                _iconImageView?.center = CGPoint(x: bounds.midX, y: bounds.midY)
+                frame.size.width = min(bounds.width, bounds.height)
+                frame.size.height = min(bounds.width, bounds.height)
+                layer.cornerRadius = min(bounds.width, bounds.height) / 2
+                layer.masksToBounds = true
+                setNeedsLayout()
             }
         }
     }
-
-    /// 按钮能否点击
-    /// 默认true
-    public var isEnabled: Bool = true {
-        willSet (newValue) {
-            isUserInteractionEnabled = newValue
-            if newValue {
-                layer.mask = nil
-            } else {
-                layer.mask = {
-                    let maskLayer = CAShapeLayer()
-                    maskLayer.frame = bounds
-                    maskLayer.backgroundColor = UIColor.white.withAlphaComponent(0.5).cgColor
-                    return maskLayer
-                }()
-            }
-        }
-    }
-
-    /// 加载视图，但isLoading为true时默认创建
-    lazy var _activityView: UIActivityIndicatorView = {
-        let activityView = UIActivityIndicatorView(frame: CGRect(x: 0, y: 0, width: 15, height: 15))
-        activityView.center = CGPoint(x: bounds.midX, y: bounds.midY)
-        addSubview(activityView)
-        return activityView
-    }()
-    /// 是否显示加载动画，此属性会影响isEnabled属性，并且隐藏标题和icon
-    /// 默认false
-    public var isLoading: Bool = false {
-        willSet (newValue) {
-            /// 若为文字按钮
-            switch style {
-            case .text:
-                print("文字按钮不支持加载...")
-                return
-            case .normal:
-                _activityView.style = .gray
-            default:
-                _activityView.style = .white
-            }
-
-            /// 使能/失能按钮
+    
+    /// 加载中(default `false`), 会自动改变isEnabled属性
+    public var isLoading: Bool! {
+        willSet {
             isEnabled = !newValue
-
-            /// 隐藏/显示 标题和icon
-            _titleLabel?.isHidden = newValue
-            _iconImageView?.isHidden = newValue
-
+            for view in subviews {
+                view.alpha = (newValue && view.tag != 10001) ? 0 : 1
+            }
             if newValue {
-                _activityView.startAnimating()
-                addSubview(_activityView)
+                insertSubview({
+                    let loading = UIActivityIndicatorView(frame: bounds)
+                    loading.center = CGPoint(x: bounds.midX, y: bounds.midY)
+                    switch style! {
+                    case .normal: loading.style = .gray
+                    default: loading.style = .white
+                    }
+                    loading.startAnimating()
+                    loading.tag = 10002
+                    return loading
+                }(), at: 0)
             } else {
-                _activityView.stopAnimating()
-                _activityView.removeFromSuperview()
+                viewWithTag(10002)?.removeFromSuperview()
             }
         }
     }
-
-    /// 按钮点击触发回调
-    public var onClick: ((ELButton) -> Void)?
-
-    //MARK: - Title & Icon
-    var _titleLabel: UILabel?
-    public var titleLable: UILabel? { get { return _titleLabel } }
-
-    var _iconImageView: UIImageView?
-    public var iconImage: UIImage? { get { return _iconImageView?.image } }
-
-    /// 设置按钮标题
-    ///
-    /// - Parameters:
-    ///   - text: 按钮标题
-    ///   - font: 按钮标题字体
-    public func setTitle(_ text: String, withFont font: UIFont = UIFont.systemFont(ofSize: 15)) {
-        if _titleLabel == nil {
-            _titleLabel = UILabel()
-            _titleLabel?.font = font
-            addSubview(_titleLabel!)
+    
+    /// icon | image 位置(default `true`)
+    public var isImageInLeft: Bool! {
+        didSet {
+            setNeedsLayout()
         }
-        let labelRect = (text as NSString).boundingRect(with: frame.size,
-                                                        options: .usesLineFragmentOrigin,
-                                                        attributes: [NSAttributedString.Key.font: font],
-                                                        context: nil)
-        _titleLabel?.frame = labelRect
-        _titleLabel?.center = CGPoint(x: bounds.midX, y: bounds.midY)
-        _titleLabel?.text = text
-        updateTheme()
     }
-
-    /// 设置按钮的icon
-    ///
-    /// - Parameters:
-    ///   - image: 图片对象
-    ///   - atLeft: 此图片相对标题位置
-    public func setIcon(_ image: UIImage, withSize size: CGFloat = 20, atLeft: Bool = true) {
-        switch style {
-        case .text:
-            print("文字按钮不支持icon...")
-            return
-        default:
-            if _iconImageView == nil {
-                _iconImageView = UIImageView(frame: CGRect(x: 0, y: 0, width: size, height: size))
-                _iconImageView?.contentMode = .scaleAspectFill
-                addSubview(_iconImageView!)
+    
+    /// 使能
+    public override var isEnabled: Bool {
+        willSet {
+            isUserInteractionEnabled = newValue
+            if !newValue {
+                addSubview({
+                    let maskView = UIView(frame: bounds)
+                    maskView.backgroundColor = UIColor.white.withAlphaComponent(0.2)
+                    maskView.tag = 10001
+                    addSubview(maskView)
+                    return maskView
+                }())
+            } else {
+                viewWithTag(10001)?.removeFromSuperview()
             }
-            _iconImageView?.center = CGPoint.init(x: bounds.midX, y: bounds.midY)
-            _iconImageView?.image = image
-            layoutTitleAndIcon(atLeft)
-            updateTheme()
         }
     }
-
-    //MARK: - Init
-
-    /// 初始化
+    
+    //MARK: Private vars
+    private var _title: String?
+    private var _hasImage: Bool = false
+    private struct Rects {
+        var title = CGRect.zero
+        var image = CGRect.zero
+    }
+    private var _rects: Rects {
+        get {
+            var rects = Rects()
+            if isCircle {
+                rects.image = CGRect(x: 0, y: 0, width: 15, height: 15)
+                rects.image.origin.x = (bounds.width - 15) / 2
+                rects.image.origin.y = (bounds.height - 15) / 2
+                return rects
+            }
+            /// 布局方式: 图片宽(15), 左右边距(共16), 字符与图片间距(8)
+            
+            /// 计算标题布局位置
+            if let text = _title {
+                let textSize = (text as NSString).boundingRect(with: CGSize(width: CGFloat.infinity, height: bounds.width),
+                                                               options: .usesLineFragmentOrigin,
+                                                               attributes: [.font: UIFont.systemFont(ofSize: 15)],
+                                                               context: nil).size
+                rects.title.size = textSize
+                rects.title.origin.y = (bounds.height - textSize.height) / 2
+            }
+            
+            /// 计算图片布局
+            if _hasImage {
+                rects.title.size.width = min(bounds.width - 16 - 15 - 8, rects.title.width)
+                rects.image.size = CGSize(width: 15, height: 15)
+                rects.image.origin.y = (bounds.height - 15) / 2
+            }
+            
+            /// 布局计算
+            let total = rects.title.width + rects.image.width + (_hasImage ? 8 : 0)
+            let x = (bounds.width - total) / 2
+            if isImageInLeft {
+                rects.image.origin.x = x
+                rects.title.origin.x = (x + rects.image.width + (_hasImage ? 8 : 0))
+            } else {
+                rects.title.origin.x = x
+                rects.image.origin.x = (x + total - 15)
+            }
+            return rects
+        }
+    }
+    
+    //MARK: Init
+    /// 初始化按钮
     ///
-    /// - Parameter frame: 视图的frame值
-    public override init(frame: CGRect) {
+    /// - Parameters:
+    ///   - frame: 按钮位置及大小
+    ///   - style: 按钮样式, 默认 `.normal`
+    public init(frame: CGRect, withStyle style: ELButton.Style = .normal) {
         super.init(frame: frame)
-    }
-
-    /// 快捷初始化方法
-    ///
-    /// - Parameter style: 按钮样式
-    public convenience init(style: ELButton.Style) {
-        self.init(frame: CGRect(x: 0, y: 0, width: 120, height: 45))
         self.style = style
+        theme = ELButtonTheme.from(style: style) ?? ELButtonTheme()
+        isPlain = false
+        isTinyRound = true
+        isRound = false
+        isCircle = false
+        isLoading = false
+        isImageInLeft = true
+        
+        if let backgroundColor = theme.backgroundColor {
+            self.backgroundColor = backgroundColor
+        }
+        if let borderColor = theme.borderColor {
+            layer.borderColor = borderColor.cgColor
+            layer.borderWidth = 1
+        }
     }
-
-    /// 快捷初始化方法
-    ///
-    /// - Parameters:
-    ///   - frame: 按钮frame值
-    ///   - style: 按钮样式
-    public convenience init(frame: CGRect, withStyle style: ELButton.Style) {
-        self.init(frame: frame)
-        self.style = style
+    
+    /// 绘制
+    func updateTheme() {
+        if isHighlighted {
+            if let highlightBorderColor = theme.highlightBorderColor {
+                layer.borderColor = highlightBorderColor.cgColor
+                layer.borderWidth = 1
+            } else {
+                layer.borderWidth = 0
+            }
+            if let highlightBackgroundColor = theme.highlightBackgroundColor {
+                backgroundColor = highlightBackgroundColor
+            }
+        } else {
+            if let borderColor = theme.borderColor {
+                layer.borderColor = borderColor.cgColor
+                layer.borderWidth = 1
+            } else {
+                layer.borderWidth = 0
+            }
+            if let backgroundColor = theme.backgroundColor {
+                self.backgroundColor = backgroundColor
+            }
+        }
     }
-
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    deinit {}
+}
 
-    /// 根据风格更新按钮主题
-    func updateTheme() {
-
-        /// 先设置标题颜色
-        _titleLabel?.textColor = _currentTheme.titleColor
-
-        /// 根据风格调整边框
-        switch style {
-        case .text:
-            layer.borderWidth = 0
-            return
-        case .normal:
-            layer.borderWidth = 1
-        default:
-            layer.borderWidth = (isPlain == true) ? 1 : 0
+//MARK: Override
+extension ELButton {
+    /// 设置文字颜色，仅`.normal`, `.highlighted`两种状态
+    public override func setTitleColor(_ color: UIColor?, for state: UIControl.State) {
+        if state == .normal {
+            theme.textColor = color ?? theme.textColor
+            super.setTitleColor(theme.textColor, for: .normal)
         }
-
-        /// 其它风格的边框
-        layer.borderColor = _currentTheme.borderColor?.cgColor
-
-        /// icon渲染
-        if let icon = _iconImageView, let iconColor = _currentTheme.iconColor {
-            icon.image = icon.image?.render(with: iconColor)
+        if state == .highlighted {
+            theme.highlightTextColor = color ?? theme.highlightTextColor
+            super.setTitleColor(theme.highlightTextColor, for: .highlighted)
         }
-
-        /// 背景色
-        backgroundColor = _currentTheme.backgroundColor
     }
-
-    /// 排列标题和icon
-    func layoutTitleAndIcon(_ iconAtLeft: Bool) {
-        if let tFrame = _titleLabel?.frame, let iFrame = _iconImageView?.frame {
-            let midX = bounds.midX
-            let totalWidth = tFrame.width + iFrame.width
-            var startX = midX - totalWidth / 2
-            if startX < 0 {
-                startX = 0
-                _titleLabel?.frame.size.width = tFrame.width + startX
-            }
-            if iconAtLeft {
-                _titleLabel?.frame.origin.x = startX + iFrame.width
-                _iconImageView?.frame.origin.x = startX
+    
+    /// 设置标题
+    public override func setTitle(_ title: String?, for state: UIControl.State) {
+        _title = title
+        super.setTitle(title, for: .normal)
+        setTitleColor(theme.textColor, for: .normal)
+        setTitleColor(theme.highlightTextColor, for: .highlighted)
+        titleLabel?.font = UIFont.systemFont(ofSize: 15)
+    }
+    
+    /// 设置图片
+    public override func setImage(_ image: UIImage?, for state: UIControl.State) {
+        _hasImage = image != nil
+        if state == .normal {
+            if let iconColor = theme.iconColor {
+                super.setImage(image?.stroked(by: iconColor), for: .normal)
             } else {
-                _titleLabel?.frame.origin.x = startX
-                _iconImageView?.frame.origin.x = startX + tFrame.width
+                super.setImage(image, for: .normal)
             }
         }
+        if state == .highlighted {
+            if let highlightIconColor = theme.highlightIconColor {
+                super.setImage(image?.stroked(by: highlightIconColor), for: .highlighted)
+            } else {
+                super.setImage(image, for: .highlighted)
+            }
+        }
+        imageView?.contentMode = .scaleAspectFit
     }
-
-    //MARK: - Touch Delegate
+    
+    /// 设置图片
+    public func setImage(_ iconName: ELIcon.Name, for state: UIControl.State) {
+        setImage(ELIcon.get(iconName), for: .normal)
+        setImage(ELIcon.get(iconName), for: .highlighted)
+    }
+    
+    /// 点击事件触发
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        _titleLabel?.textColor = _currentTheme.highlightTitleColor
+        isHighlighted = true
+        updateTheme()
+    }
+    
+    /// 取消点击事件触发
+    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        isHighlighted = false
+        updateTheme()
+    }
+    
+    /// 标题绘制区域
+    public override func titleRect(forContentRect contentRect: CGRect) -> CGRect {
+        return _rects.title
+    }
+    
+    /// 图片绘制区域
+    public override func imageRect(forContentRect contentRect: CGRect) -> CGRect {
+        return _rects.image
+    }
+}
 
-        /// 若为文字按钮，此处可以直接返回
+//MARK: - Button's Theme
+public class ELButtonTheme: Decodable {
+    
+    /// 保留颜色
+    private var reservedColor: ELColor?
+    
+    /// 文字颜色
+    public var textColor: UIColor?
+    
+    /// 文字高亮颜色
+    public var highlightTextColor: UIColor?
+    
+    /// icon颜色
+    public var iconColor: UIColor?
+    
+    /// icon高亮颜色
+    public var highlightIconColor: UIColor?
+    
+    /// 边框颜色
+    public var borderColor: UIColor?
+    
+    /// 边框高亮颜色
+    public var highlightBorderColor: UIColor?
+    
+    /// 背景颜色
+    public var backgroundColor: UIColor?
+    
+    /// 背景高亮颜色
+    public var highlightBackgroundColor: UIColor?
+    
+    public required init(from decoder: Decoder) throws {}
+    
+    public init() {}
+    
+    /// 声明初始化
+    class func from(style: ELButton.Style) -> ELButtonTheme? {
+        let theme = ELButtonTheme()
         switch style {
+        case .normal:
+            theme.reservedColor = ELColor.primary
+            theme.textColor = ELColor.withHex("303133")
+            theme.highlightTextColor = ELColor.primary
+            theme.iconColor = ELColor.withHex("303133")
+            theme.highlightIconColor = ELColor.primary
+            theme.borderColor = ELColor.rgb(96, 98, 102).withAlphaComponent(0.8)
+            theme.highlightBorderColor = ELColor.primary
+            theme.backgroundColor = .white
+            theme.highlightBackgroundColor = ELColor.primary.withAlphaComponent(0.2)
+            return theme
         case .text:
-            return
+            theme.textColor = ELColor.primary
+            theme.highlightTextColor = ELColor.primary.offset(delta: 0.1)
+            return theme
+        case .success:
+            theme.reservedColor = ELColor.success
+        case .info:
+            theme.reservedColor = ELColor.info
+        case .warning:
+            theme.reservedColor = ELColor.warning
+        case .danger:
+            theme.reservedColor = ELColor.danger
+        case .custom(let themeObj):
+            if let data = themeObj as? Data {
+                return try? JSONDecoder().decode(ELButtonTheme.self, from: data)
+            } else if let string = themeObj as? String, let data = string.data(using: .utf8) {
+                return try? JSONDecoder().decode(ELButtonTheme.self, from: data)
+            } else if let dictionary = themeObj as? [String: Any],
+                let data = try? JSONSerialization.data(withJSONObject: dictionary, options: .prettyPrinted)
+            {
+                return try? JSONDecoder().decode(ELButtonTheme.self, from: data)
+            }
         default:
-            break
+            theme.reservedColor = ELColor.primary
         }
-
-        /// 是否渲染icon
-        if let icon = _iconImageView, let iconColor = _currentTheme.highlightIconColor {
-            icon.image = icon.image?.render(with: iconColor, toSize: nil)
-        }
-
-        /// 显示高亮的背景色
-        backgroundColor = _currentTheme.highlightBackgroundColor
-
-        /// 显示高亮的边框
-        if layer.borderWidth != 0 {
-            layer.borderColor = _currentTheme.highlightBorderColor?.cgColor
+        
+        theme.textColor = .white
+        theme.highlightTextColor = .white
+        theme.backgroundColor = theme.reservedColor
+        theme.highlightBackgroundColor = theme.reservedColor?.offset(delta: 0.1)
+        theme.iconColor = .white
+        theme.highlightIconColor = .white
+        return theme
+    }
+    
+    /// 朴素化
+    fileprivate func plained() {
+        if textColor == ELColor.withHex("303133") {
+            highlightBackgroundColor = .white
+        } else {
+            textColor = reservedColor
+            highlightTextColor = .white
+            backgroundColor = reservedColor?.withAlphaComponent(0.2)
+            highlightBackgroundColor = reservedColor
+            borderColor = reservedColor?.withAlphaComponent(0.8)
+            highlightBorderColor = reservedColor
+            iconColor = reservedColor
+            highlightIconColor = .white
         }
     }
-
-    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let touch = touches.first {
-            let location = touch.location(in: superview)
-            if frame.contains(location) {
-                unowned let weakSelf = self
-                onClick?(weakSelf)
-            }
+    
+    /// 反朴素化
+    fileprivate func revertPlain() {
+        if textColor == ELColor.withHex("303133") {
+            highlightBackgroundColor = reservedColor?.withAlphaComponent(0.2)
+        } else {
+            textColor = .white
+            highlightTextColor = .white
+            backgroundColor = reservedColor
+            highlightBackgroundColor = reservedColor?.offset(delta: 0.1)
+            borderColor = nil
+            highlightBorderColor = nil
+            iconColor = .white
+            highlightIconColor = .white
         }
-        updateTheme()
     }
 }

@@ -93,4 +93,23 @@ public extension ELColor {
         
         return ELColor.rgba(rgba)
     }
+    
+    /// 颜色偏移
+    ///
+    /// - Parameters:
+    ///   - rgb: RGB偏移值(0 ~ 1.0)
+    ///   - da: 透明度偏移值(0 ~ 1.0)
+    /// - Returns: 新的颜色对象
+    func offset(delta rgb: CGFloat, da: CGFloat = 0) -> ELColor {
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+        r -= rgb
+        g -= rgb
+        b -= rgb
+        a -= da
+        return ELColor.rgba(r, g, b, a)
+    }
 }

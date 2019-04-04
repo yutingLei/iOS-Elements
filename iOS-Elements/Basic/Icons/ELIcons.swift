@@ -133,7 +133,7 @@ public class ELIcon: UIImage {
     }
 }
 
-fileprivate extension ELIcon {
+extension UIImage {
     
     /// 以给定颜色绘制
     ///
@@ -166,7 +166,7 @@ fileprivate extension ELIcon {
         /// Begin context
         UIGraphicsBeginImageContext(newSize)
 
-        let rect = CGRect(origin: CGPoint.zero, size: size)
+        let rect = CGRect(origin: CGPoint.zero, size: newSize)
         
         /// Draw image
         draw(in: rect)
