@@ -80,6 +80,27 @@ public class ELSelection: UIView {
         get { return subviews as! [ELSelectionItem] }
     }
     
+    /// 已选择的选项
+    public var selectedIndexes: [Int] {
+        get {
+            var indexes = [Int]()
+            for i in 0..<items.count {
+                if items[i].isSelected {
+                    indexes.append(i)
+                }
+            }
+            return indexes
+        }
+        set {
+            _ = items.map({ $0.isSelected = false })
+            for index in newValue {
+                if index >= 0 && index < items.count {
+                    items[index].isSelected = true
+                }
+            }
+        }
+    }
+    
     //MARK: - Initialize
     public init(frame: CGRect, withLayout layout: Layout) {
         super.init(frame: frame)
