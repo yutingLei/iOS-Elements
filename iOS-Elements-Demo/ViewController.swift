@@ -14,7 +14,11 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        elButtons()
+//        elButtons()
+        
+//        radios()
+        
+        selections()
     }
     
     func elButtons() {
@@ -65,6 +69,37 @@ class ViewController: UIViewController {
     
     @objc func onTouch() {
         print("点击了默认按钮")
+    }
+    
+    func selections() {
+        let layouts: [ELSelection.Layout] = [.horizontal, .vertical, .justified, .matrix(row: 2, col: 2)]
+        let titles = ["Horizontal", "Vertical", "Justified", "Matrix"]
+        let texts = [["选项一", "选项二", "选项三", "选项四"],
+                     ["选项一", "选项二", "选项三", "这是一个长选项，为了测试竖直排列时会出现什么情况"],
+                     ["这是一个长选项，为了测试竖直排列时会出现什么情况", "选项一", "选项二", "选项三", "这是一个长选项，为了测试竖直排列时会出现什么情况"],
+                     ["选项一", "选项二", "选项三", "选项四"],]
+        let starts: [ELSelection.Start] = [.numeric(1), .upperChar("A"), .lowerChar("f"), .roman(17)]
+        let x: CGFloat = 20
+        var y: CGFloat = 80
+        let w = view.bounds.width - 40
+        var h: CGFloat = 50
+        for i in 0..<layouts.count {
+            let label = UILabel(frame: CGRect.init(x: x, y: y, width: w, height: 35))
+            label.font = UIFont.boldSystemFont(ofSize: 18)
+            label.text = titles[i]
+            view.addSubview(label)
+            y += 35
+            
+            let group = ELSelection(frame: CGRect(x: x, y: y, width: w, height: h), withLayout: layouts[i])
+            group.texts = texts[i]
+            group.mode = i % 2 == 0 ? .single : .multiple
+            group.start = starts[i]
+            group.itemSelectedColor = UIColor.orange
+            group.disabledItem(at: 0, with: true)
+            view.addSubview(group)
+            y += h
+            h = 150
+        }
     }
 }
 
