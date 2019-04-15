@@ -21,8 +21,10 @@ class ViewController: UIViewController {
         
 //        selections()
         
-        textInputs()
+//        textInputs()
 //        poper()
+        
+        numberInput()
     }
     
     func elButtons() {
@@ -209,6 +211,40 @@ class ViewController: UIViewController {
         button.backgroundColor = .orange
         button.tag = 11001
         view.addSubview(button)
+    }
+    
+    func numberInput() {
+        let texts = ["Normal", ".min = 1, .max = 10", ".step = 5", ".precision = 2, .step = 0.1", ".controlsPosition = .right"]
+        let x: CGFloat = 20
+        var y: CGFloat = 80
+        let w: CGFloat = 150
+        let h: CGFloat = 40
+        
+        for text in texts {
+            let label = UILabel(frame: CGRect(x: x, y: y, width: 280, height: 30))
+            label.font = UIFont.boldSystemFont(ofSize: 18)
+            label.text = text
+            view.addSubview(label)
+            y += 35
+            
+            let input = ELNumberInput(frame: CGRect(x: x, y: y, width: w, height: h), value: 1)
+            if text == ".min = 1, .max = 10" {
+                input.min = 1
+                input.max = 10
+            }
+            if text == ".step = 5" {
+                input.step = 5
+            }
+            if text == ".precision = 2, .step = 0.1" {
+                input.step = 0.1
+                input.precision = 2
+            }
+            if text == ".controlsPosition = .right" {
+                input.controlsPosition = .right
+            }
+            view.addSubview(input)
+            y += 45
+        }
     }
 }
 
