@@ -69,9 +69,9 @@
 		840CFA6C221E8B8C00058DFF /* Form */ = {
 			isa = PBXGroup;
 			children = (
+				84FCDDB9225C7D0900FC1561 /* ELPoper.swift */,
 				84A8842C225B1CB400E93079 /* ELSelection.swift */,
 				84FCDDB7225C309F00FC1561 /* ELTextInput.swift */,
-				84FCDDB9225C7D0900FC1561 /* ELPoper.swift */,
 				84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */,
 			);
 			path = Form;
