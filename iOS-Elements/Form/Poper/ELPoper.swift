@@ -6,6 +6,16 @@
 //  Copyright © 2019 yutingLei. All rights reserved.
 //
 
+/*****************************************************************
+ * ELPoper
+ * 弹出视图抽象类
+ *
+ * 具体子类：
+ *      图片弹出视图 ELImagePoper
+ *      字符弹出视图 ELTextsPoper
+ *      持有可选项弹出视图 ELSelectPoper
+ ******************************************************************/
+
 import UIKit
 
 /// 弹出视图代理
@@ -14,21 +24,8 @@ import UIKit
     /// 视图已显示
     @objc optional func onPoperShown()
     
-    /// 已选择选项内容
-    @objc optional func onPoperSelect(_ text: String)
-    
     /// 已隐藏
     @objc optional func onPoperDismissed()
-    
-    //-------------------- 选项 ------------------------
-    /// 选项样式
-    @objc optional func onPoperSelectionStyle() -> UITableViewCell.CellStyle
-    
-    /// 获取标题值的key, 默认"value"字段
-    @objc optional func onPoperSelectionTitleKey() -> String
-    
-    /// 获取子标题值的key, 默认"subvalue"字段
-    @objc optional func onPoperSelectionSubtitleKey() -> String
 }
 
 public extension ELPoper {
@@ -51,48 +48,6 @@ public extension ELPoper {
         case dark
 //        case custom(UIColor, UIColor, UIColor)
     }
-    
-    /// 展示内容的类型
-    enum ContentType {
-        case image(UIImage)
-        case text(String)
-        case texts([String])
-        case keyvalue([[String: Any]])
-        
-        static func ==(lhs: ContentType, rhs: ContentType) -> Bool {
-            /// Hasher for left-hand side
-            var lHash = 0
-            switch lhs {
-            case .image(let image):
-                lHash = image.hashValue
-            case .text(let text):
-                lHash = text.hashValue
-            case .texts(let texts):
-                lHash = texts.hashValue
-            case .keyvalue(var textsInfo):
-                var hasher = Hasher()
-                hasher.combine(bytes: withUnsafeBytes(of: &textsInfo) { $0 })
-                lHash = hasher.finalize()
-            }
-            
-            /// Hasher for right-hand side
-            var rHash = 0
-            switch rhs {
-            case .image(let image):
-                rHash = image.hashValue
-            case .text(let text):
-                rHash = text.hashValue
-            case .texts(let texts):
-                rHash = texts.hashValue
-            case .keyvalue(var textsInfo):
-                var hasher = Hasher()
-                hasher.combine(bytes: withUnsafeBytes(of: &textsInfo) { $0 })
-                rHash = hasher.finalize()
-            }
-            
-            return lHash == rHash
-        }
-    }
 }
 
 //MARK: - PoperView
@@ -113,50 +68,23 @@ public class ELPoper: UIView {
     /// 参考视图
     private(set) public weak var refrenceView: UIView!
     
-    /// 弹出的内容
-    public var contents: ContentType?
+    /// 是否全屏展示(false), 注意：此属性比contentsFixedSize拥有更高的优先级
+    public var isFullScreen: Bool!
     
-    /// 在没有内容时，是否显示加载图标
-    public var showActivityIndicatorWhileNullContents = true
+    /// 全屏时，关闭按钮
+    lazy var closeBtn: UIButton = {
+        let statusFrame = UIApplication.shared.statusBarFrame
+        let button = UIButton(frame: CGRect(x: bounds.width - 45, y: statusFrame.height + 25, width: 25, height: 25))
+        button.addTarget(self, action: #selector(dismiss), for: .touchUpInside)
+        button.setImage(ELIcon.get(.close), for: .normal)
+        return button
+    }()
     
     /// 展示内容固定大小
     public var contentsFixedSize: CGSize?
     
     /// 内容视图
     fileprivate(set) public var contentView: UIView!
-    
-    //MARK: - Lazy vars
-    /// 加载动画视图
-    lazy var loadingView: UIActivityIndicatorView = {
-        let loading = UIActivityIndicatorView(frame: CGRect.zero)
-        return loading
-    }()
-    
-    /// 当contents类型为.image时，用于图片展示的视图
-    lazy var imageView: UIImageView = {
-        let imageView = UIImageView(frame: CGRect.zero)
-        imageView.contentMode = .scaleAspectFit
-        return imageView
-    }()
-    
-    /// 当contents类型为.text时，用于纯文字展示的视图
-    lazy var textView: UITextView = {
-       let textView = UITextView(frame: CGRect.zero)
-        textView.font = UIFont.systemFont(ofSize: 14)
-        textView.isEditable = false
-        return textView
-    }()
-    
-    /// 当contents类型为.texts时，用于多行文字展示的表格视图
-    lazy var tableView: UITableView = {
-        let tableView = UITableView(frame: CGRect.zero)
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
-        tableView.separatorStyle = .none
-        tableView.tableFooterView = UIView()
-        tableView.dataSource = self
-        tableView.delegate = self
-        return tableView
-    }()
     
     //MARK: - Init
     /// 初始化弹出视图
@@ -166,6 +94,7 @@ public class ELPoper: UIView {
         
         self.refrenceView = refrenceView
         self.delegate = delegate
+        isFullScreen = false
         
         contentView = UIView()
         contentView.layer.masksToBounds = true
@@ -196,43 +125,20 @@ public extension ELPoper {
     
     /// 显示弹出视图
     /// 未dismiss之前再次调用相当于更新视图，可能会改变大小
-    func show() {
-        /// Add myself into keyWindow after calculated rects
-        defer {
-            createMaskLayer()
-            if superview == nil {
-                UIApplication.shared.keyWindow?.addSubview(self)
-                startAnimation(forShow: true) {[unowned self] _ in
-                    self.delegate?.onPoperShown?()
-                }
+    @objc func show() {
+
+        if !isFullScreen {
+            if let sublayers = contentView.layer.sublayers {
+                _ = sublayers.map({ ($0 is CAShapeLayer) ? $0.removeFromSuperlayer() : nil })
             }
+            contentView.layer.mask = nil
+            createMaskLayer()
         }
         
-        /// 内容为空, 且showActivityIndicatorWhileNullContents=false时，不显示任何内容
-        if contents == nil && !showActivityIndicatorWhileNullContents {
-            removeFromSuperview()
-            return
-        }
-        
-        let sizes = suggestionSizes(of: contents)
-        let rects = suggestionRects(with: sizes)
-        
-        /// 内容为空, 但showActivityIndicatorWhileNullContents = true时，显示加载视图
-        if contents == nil && showActivityIndicatorWhileNullContents {
-            layoutLoading(with: rects)
-            return
-        }
-        
-        if let contents = contents {
-            switch contents {
-            case .image(let image):
-                layoutImageView(with: rects, image: image)
-            case .text(let text):
-                layoutTextView(with: rects, text: text)
-            case .texts(_):
-                layoutTableView(with: rects)
-            case .keyvalue(_):
-                layoutTableView(with: rects)
+        if superview == nil {
+            UIApplication.shared.keyWindow?.addSubview(self)
+            startAnimation(forShow: true) {[unowned self] _ in
+                self.delegate?.onPoperShown?()
             }
         }
     }
@@ -240,7 +146,7 @@ public extension ELPoper {
     /// 隐藏弹出视图
     /// 注意：多数时候无需手动调用(输入框情况除外)
     ///      当参考视图是一个输入框时，点击输入框区域将不会自动隐藏
-    func dismiss() {
+    @objc func dismiss() {
         if let keyWindow = UIApplication.shared.keyWindow {
             for subview in keyWindow.subviews {
                 if subview is ELPoper {
@@ -254,128 +160,14 @@ public extension ELPoper {
     }
 }
 
-//MARK: - Loading Activity Indicator
-extension ELPoper {
-    /// Add loading indicator view
-    func layoutLoading(with rects: (CGRect, CGRect)) {
-        _ = contentView.subviews.map({ $0.isHidden = !($0 is UIActivityIndicatorView) })
-        
-        if loadingView.superview == nil {
-            contentView.addSubview(loadingView)
-        }
-        
-        loadingView.style = theme == .light ? .gray : .white
-        loadingView.startAnimating()
-        loadingView.frame = rects.0
-        contentView.frame = rects.1
-    }
-}
-
-//MARK: - The contents is UIImage
-extension ELPoper {
-    /// Layout image view
-    func layoutImageView(with rects: (CGRect, CGRect), image: UIImage) {
-        _ = contentView.subviews.map({ $0.isHidden = !($0 is UIImageView) })
-        
-        if imageView.superview == nil {
-            contentView.addSubview(imageView)
-        }
-        
-        contentView.frame = rects.1
-        imageView.frame = rects.0
-        imageView.image = image
-        updateTheme(with: imageView)
-    }
-}
-
-//MARK: - The contents is 'text'
-extension ELPoper {
-    /// Layout text view
-    func layoutTextView(with rects: (CGRect, CGRect), text: String) {
-        _ = contentView.subviews.map({ $0.isHidden = !($0 is UITextView) })
-        
-        if  textView.superview == nil {
-            contentView.addSubview(textView)
-        }
-        
-        contentView.frame = rects.1
-        textView.frame = rects.0
-        textView.text = text
-        updateTheme(with: textView)
-    }
-}
-
-//MARK: - The contents is 'texts' or 'keyvalue'
-extension ELPoper {
-    /// Suggestion size for texts
-    func suggestionSize(of texts: [String]) -> CGSize {
-        var size = CGSize(width: 0, height: texts.count * 35)
-        for text in texts {
-            let textWidth = text.widthWithLimitHeight(35)
-            if textWidth > size.width {
-                size.width = textWidth
-            }
-        }
-        size.width += 36
-        return size
-    }
-    
-    /// Suggestion size for keyvalue
-    func suggestionSize(of texts: [[String: Any]]) -> CGSize {
-        let cellStyle = suggestionTableViewCellStyle()
-        var size = CGSize(width: 0, height: texts.count * (cellStyle == .subtitle ? 50 : 35))
-        let titleKey = delegate?.onPoperSelectionTitleKey?() ?? "value"
-        let subtitleKey = delegate?.onPoperSelectionSubtitleKey?() ?? "subvalue"
-        
-        for text in texts {
-            var currentWidth: CGFloat = 0
-            if let value = text[titleKey] as? String {
-                let textWidth = value.widthWithLimitHeight(50, fontSize: 16)
-                currentWidth = textWidth
-            }
-            if let value = text[subtitleKey] as? String {
-                switch cellStyle {
-                case .subtitle:
-                    let textWidth = value.widthWithLimitHeight(50, fontSize: 13)
-                    if textWidth > currentWidth {
-                        currentWidth = textWidth
-                    }
-                case .value1, .value2:
-                    let textWidth = value.widthWithLimitHeight(35, fontSize: 13)
-                    currentWidth += (textWidth + 20)
-                default:
-                    break
-                }
-            }
-            if currentWidth > size.width {
-                size.width = currentWidth
-            }
-        }
-        size.width += 36
-        return size
-    }
-    
-    /// Layout table view
-    func layoutTableView(with rects: (CGRect, CGRect)) {
-        _ = contentView.subviews.map({ $0.isHidden = !($0 is UITableView) })
-        
-        if tableView.superview == nil {
-            contentView.addSubview(tableView)
-        }
-        
-        contentView.frame = rects.1
-        tableView.frame = rects.0
-        tableView.reloadData()
-        updateTheme(with: tableView)
-    }
-}
-
-
-
 //MARK: - Calculate subview's rect of contentView
 extension ELPoper {
-    /// 计算内容视图的大小及其子视图的大小
-    func suggestionSizes(of contents: ContentType?) -> (CGSize, CGSize) {
+    /// 根据内容计算内容视图的大小
+    func suggestionContentSize(of size: CGSize) -> (CGSize, CGSize) {
+        if isFullScreen {
+            return (bounds.size, bounds.size)
+        }
+        
         /// 左右上下边距(8), 箭头宽高(10)
         if let fixedSize = contentsFixedSize {
             switch area {
@@ -386,40 +178,28 @@ extension ELPoper {
             }
         }
         
-        var subviewSize: CGSize
-        var contentSize: CGSize = CGSize.zero
-        if contents == nil {
-            subviewSize = CGSize(width: 120, height: 120)
-        } else {
-            switch contents! {
-            case .image(let image):
-                subviewSize = image.size
-            case .text(let text):
-                subviewSize = text.sizeWithLimits(bounds.width / 2)
-            case .texts(let texts):
-                subviewSize = suggestionSize(of: texts)
-            case .keyvalue(let textsInfo):
-                subviewSize = suggestionSize(of: textsInfo)
-            }
-        }
-        
+        var contentSize = CGSize.zero
         /// Margin Left&Right = 8
         /// Margin Top&Bottom = 8
         /// Arrow's width&height = 10
         switch area {
         case .left, .right:
-            contentSize.width += (subviewSize.width + 26)
-            contentSize.height += (subviewSize.height + 16)
+            contentSize.width += (size.width + 26)
+            contentSize.height += (size.height + 16)
         default:
-            contentSize.width += (subviewSize.width + 16)
-            contentSize.height += (subviewSize.height + 26)
+            contentSize.width += (size.width + 16)
+            contentSize.height += (size.height + 26)
         }
         
-        return (subviewSize, contentSize)
+        return (size, contentSize)
     }
     
     /// 计算弹出视图的位置及大小
     func suggestionRects(with sizes: (CGSize, CGSize)) -> (CGRect, CGRect) {
+        
+        if isFullScreen {
+            return (CGRect(origin: CGPoint.zero, size: sizes.0), CGRect(origin: CGPoint.zero, size: sizes.1))
+        }
         
         let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
         
@@ -589,11 +369,11 @@ extension ELPoper {
             maskLayer.path = path.cgPath
             return maskLayer
         }()
-        updateTheme(with: nil)
+        updateTheme()
     }
 
     /// 更新内容视图主题
-    func updateTheme(with subview: UIView?) {
+    @objc func updateTheme() {
         /// border layer
         var borderLayer: CAShapeLayer?
         if let contentSublayers = contentView.layer.sublayers {
@@ -606,47 +386,24 @@ extension ELPoper {
 
         switch theme {
         case .light:
-            if let subview = subview {
-                if let textView = subview as? UITextView {
-                    textView.textColor = ELColor.withHex("333333")
-                    textView.backgroundColor = .white
-                }
-                if let imageView = subview as? UIImageView {
-                    imageView.backgroundColor = .white
-                }
-                if let tableView = subview as? UITableView {
-                    tableView.backgroundColor = .white
-                    tableView.separatorColor = ELColor.rgb(230, 230, 230)
-                }
-            } else {
-                if borderLayer == nil {
-                    borderLayer = CAShapeLayer()
-                    borderLayer?.fillColor = nil
-                    contentView.layer.addSublayer(borderLayer!)
-                }
-                borderLayer?.frame = contentView.bounds
-                borderLayer?.path = (contentView.layer.mask as? CAShapeLayer)?.path
-                borderLayer?.strokeColor = ELColor.rgb(200, 200, 200).cgColor
-                contentView.backgroundColor = .white
+            if borderLayer == nil {
+                borderLayer = CAShapeLayer()
+                borderLayer?.fillColor = nil
+                contentView.layer.addSublayer(borderLayer!)
             }
+            borderLayer?.frame = contentView.bounds
+            borderLayer?.path = (contentView.layer.mask as? CAShapeLayer)?.path
+            borderLayer?.strokeColor = ELColor.rgb(200, 200, 200).cgColor
+            if isFullScreen {
+                closeBtn.imageView?.image = ELIcon.get(.close)
+            }
+            contentView.backgroundColor = .white
         case .dark:
-            if let subview = subview {
-                if let textView = subview as? UITextView {
-                    textView.textColor = ELColor.withHex("898A8C")
-                    textView.backgroundColor = ELColor.rgb(54, 55, 56)
-                }
-                if let imageView = subview as? UIImageView {
-                    imageView.backgroundColor = ELColor.rgb(54, 55, 56)
-                }
-                if let tableView = subview as? UITableView {
-                    tableView.backgroundColor = ELColor.rgb(54, 55, 56)
-                    tableView.separatorColor = ELColor.rgb(120, 120, 120)
-                    tableView.separatorInset = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
-                }
-            } else {
-                borderLayer?.removeFromSuperlayer()
-                contentView.backgroundColor = ELColor.rgb(54, 55, 56)
+            borderLayer?.removeFromSuperlayer()
+            if isFullScreen {
+                closeBtn.imageView?.image = ELIcon.get(.close)?.stroked(by: UIColor.white)
             }
+            contentView.backgroundColor = ELColor.rgb(54, 55, 56)
         }
     }
 
@@ -689,117 +446,8 @@ extension ELPoper {
     }
 }
 
-//
-extension ELPoper: UITableViewDataSource, UITableViewDelegate {
-    /// 建议cell样式
-    func suggestionTableViewCellStyle() -> UITableViewCell.CellStyle {
-        if let style = delegate?.onPoperSelectionStyle?() {
-            return style
-        }
-        if let contents = contents {
-            switch contents {
-            case .keyvalue(_):
-                return .subtitle
-            default:
-                break
-            }
-        }
-        return .default
-    }
-    
-    /// 选项个数
-    public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if let contents = contents {
-            switch contents {
-            case .texts(let texts):
-                return texts.count
-            case .keyvalue(let textsInfo):
-                return textsInfo.count
-            default:
-                return 0
-            }
-        }
-        return 0
-    }
-
-    /// 选项视图
-    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        var cell = tableView.dequeueReusableCell(withIdentifier: "kOSSelectCell")
-        if cell == nil {
-            cell = UITableViewCell(style: suggestionTableViewCellStyle(), reuseIdentifier: "kOSSelectCell")
-            cell?.textLabel?.font = UIFont.systemFont(ofSize: 16)
-            cell?.detailTextLabel?.font = UIFont.systemFont(ofSize: 13)
-            cell?.selectionStyle = .none
-        }
-        
-        /// 通过contents赋值
-        var isDisabled = false
-        if let contents = contents {
-            switch contents {
-            case .texts(let texts):
-                cell?.textLabel?.text = texts[indexPath.row]
-            case .keyvalue(let textsInfo):
-                let titleKey = delegate?.onPoperSelectionTitleKey?() ?? "value"
-                let subtitleKey = delegate?.onPoperSelectionSubtitleKey?() ?? "subvalue"
-                cell?.textLabel?.text = textsInfo[indexPath.row][titleKey] as? String
-                cell?.detailTextLabel?.text = textsInfo[indexPath.row][subtitleKey] as? String
-                /// 禁止？
-                if let disabled = textsInfo[indexPath.row]["disabled"],
-                    (disabled as? Bool) == true || (disabled as? String) == "true"
-                {
-                    isDisabled = true
-                }
-            default: break
-            }
-        }
-        
-        /// 根据Theme设置选项颜色
-        if isDisabled {
-            cell?.textLabel?.textColor = theme == .light ? ELColor.withHex("898A8C") : ELColor.withHex("333333")
-            cell?.detailTextLabel?.textColor = theme == .light ? ELColor.withHex("A9AAAC") : ELColor.withHex("222222")
-        } else {
-            cell?.textLabel?.textColor = theme == .light ? ELColor.withHex("333333") : ELColor.withHex("898A8C")
-            cell?.detailTextLabel?.textColor = theme == .light ? ELColor.withHex("666666") : ELColor.withHex("696A6C")
-        }
-        cell?.backgroundColor = theme == .light ? ELColor.white : ELColor.rgb(54, 55, 56)
-        
-        return cell!
-    }
-    
-    /// 选项高度
-    public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        let style = suggestionTableViewCellStyle()
-        if style == .subtitle {
-            return 50
-        }
-        return 35
-    }
-
-    /// 点击选项触发
-    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let contents = contents {
-            switch contents {
-            case .texts(let texts):
-                delegate?.onPoperSelect?(texts[indexPath.row])
-            case .keyvalue(let textsInfo):
-                if let disabled = textsInfo[indexPath.row]["disabled"],
-                    (disabled as? Bool) == true || (disabled as? String) == "true"
-                {
-                    return
-                }
-                if let value = textsInfo[indexPath.row]["value"] as? String {
-                    delegate?.onPoperSelect?(value)
-                }
-                
-            default:break
-            }
-        }
-        dismiss()
-    }
-}
-
 //MARK: - String Extensions
-extension String {
+internal extension String {
     /// Get text width with given limit height
     func widthWithLimitHeight(_ lh: CGFloat, fontSize: CGFloat = 15) -> CGFloat {
         return sizeWithLimits(lh: lh, fontSize: fontSize).width

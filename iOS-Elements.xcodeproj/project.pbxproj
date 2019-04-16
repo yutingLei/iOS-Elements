@@ -23,6 +23,9 @@
 		84FCDDB8225C309F00FC1561 /* ELTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDB7225C309F00FC1561 /* ELTextInput.swift */; };
 		84FCDDBA225C7D0900FC1561 /* ELPoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDB9225C7D0900FC1561 /* ELPoper.swift */; };
 		84FCDDBC226063CC00FC1561 /* ELNumberInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */; };
+		84FCDDBE226415CF00FC1561 /* ELImagePoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBD226415CF00FC1561 /* ELImagePoper.swift */; };
+		84FCDDC022644F8000FC1561 /* ELTextPoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBF22644F8000FC1561 /* ELTextPoper.swift */; };
+		84FCDDC422646ECB00FC1561 /* ELTablePoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDC322646ECB00FC1561 /* ELTablePoper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +48,9 @@
 		84FCDDB7225C309F00FC1561 /* ELTextInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELTextInput.swift; sourceTree = "<group>"; };
 		84FCDDB9225C7D0900FC1561 /* ELPoper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ELPoper.swift; sourceTree = "<group>"; };
 		84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELNumberInput.swift; sourceTree = "<group>"; };
+		84FCDDBD226415CF00FC1561 /* ELImagePoper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELImagePoper.swift; sourceTree = "<group>"; };
+		84FCDDBF22644F8000FC1561 /* ELTextPoper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELTextPoper.swift; sourceTree = "<group>"; };
+		84FCDDC322646ECB00FC1561 /* ELTablePoper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELTablePoper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,7 +75,7 @@
 		840CFA6C221E8B8C00058DFF /* Form */ = {
 			isa = PBXGroup;
 			children = (
-				84FCDDB9225C7D0900FC1561 /* ELPoper.swift */,
+				84FCDDC522646FBB00FC1561 /* Poper */,
 				84A8842C225B1CB400E93079 /* ELSelection.swift */,
 				84FCDDB7225C309F00FC1561 /* ELTextInput.swift */,
 				84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */,
@@ -161,6 +167,17 @@
 				8425ECD5221BB4080056C9D7 /* ELResources.bundle */,
 			);
 			path = Icons;
+			sourceTree = "<group>";
+		};
+		84FCDDC522646FBB00FC1561 /* Poper */ = {
+			isa = PBXGroup;
+			children = (
+				84FCDDB9225C7D0900FC1561 /* ELPoper.swift */,
+				84FCDDBD226415CF00FC1561 /* ELImagePoper.swift */,
+				84FCDDBF22644F8000FC1561 /* ELTextPoper.swift */,
+				84FCDDC322646ECB00FC1561 /* ELTablePoper.swift */,
+			);
+			path = Poper;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -285,13 +302,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				84FCDDBC226063CC00FC1561 /* ELNumberInput.swift in Sources */,
+				84FCDDBE226415CF00FC1561 /* ELImagePoper.swift in Sources */,
 				846F56A82255E60000ED27CF /* ELButtonTheme.swift in Sources */,
 				84FCDDBA225C7D0900FC1561 /* ELPoper.swift in Sources */,
 				8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */,
 				84A8842D225B1CB400E93079 /* ELSelection.swift in Sources */,
+				84FCDDC022644F8000FC1561 /* ELTextPoper.swift in Sources */,
 				84FCDDB8225C309F00FC1561 /* ELTextInput.swift in Sources */,
 				8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */,
 				84152D43221CFEED001A3242 /* ELButton.swift in Sources */,
+				84FCDDC422646ECB00FC1561 /* ELTablePoper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

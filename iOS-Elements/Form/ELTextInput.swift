@@ -381,7 +381,7 @@ extension ELTextInput {
         }
         else if let fetchAsync = fetchSuggestionsAsync {
             fetchAsync(text, onFetchedSuggestions)
-            _poperView.contents = nil
+//            _poperView.contents = nil
             _poperView.show()
         }
         debounceTimer?.fireDate = Date.distantFuture
@@ -395,14 +395,14 @@ extension ELTextInput {
                     _poperView.removeFromSuperview()
                     return
                 }
-                _poperView.contents = .texts(texts)
+//                _poperView.contents = .texts(texts)
             }
             else if let textsInfo = texts as? [[String: Any]] {
                 if textsInfo.count == 0 {
                     _poperView.removeFromSuperview()
                     return
                 }
-                _poperView.contents = .keyvalue(textsInfo)
+//                _poperView.contents = .keyvalue(textsInfo)
             }
             _poperView.show()
         }
