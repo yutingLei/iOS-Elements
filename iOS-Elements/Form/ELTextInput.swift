@@ -1,16 +1,17 @@
 //
 //  ELTextInput.swift
 //
-//  Created by admin on 2019/4/8.
-//  Copyright © 2019 Develop. All rights reserved.
+//  Created by conjur on 2019/4/8.
 //
 //
 
 /*****************************************************************
  * ELTextInput
+ * 字符输入控件
  *
- * A excellent component for text input
- * 输入框组件
+ *
+ * [v] 1.支持插槽
+ * [v] 2.支持本地和远程搜索建议，并且支持debounce
  ******************************************************************/
 
 import UIKit
@@ -24,9 +25,10 @@ public extension ELTextInput {
         case countDown(String, Int, String?)
     }
     
-    typealias FetchSuggestionsCallback = (([Any]?) -> Void)
-    typealias FetchSuggestionsSync = ((_ query: String?, _ callback: FetchSuggestionsCallback) -> Void)
-    typealias FetchSuggestionsAsync = ((_ query: String?, _ callback: @escaping FetchSuggestionsCallback) -> Void)
+    typealias ResultOfKeys = (([String]?) -> Void)
+    typealias Callback = (([Any]?) -> Void)
+    typealias FetchSync = ((_ query: String?,_ keys: ResultOfKeys?, _ callback: Callback) -> Void)
+    typealias FetchAsync = ((_ query: String?, _ keys: ResultOfKeys?, _ callback: @escaping Callback) -> Void)
 }
 
 public class ELTextInput: UITextField {
@@ -79,14 +81,10 @@ public class ELTextInput: UITextField {
     public var borderColorWhenErrorOccurred: UIColor!
     
     /// 本地搜索建议
-    public var fetchSuggestions: FetchSuggestionsSync?
+    public var fetchSuggestions: FetchSync?
     
     /// 远程(服务器)搜索建议
-    public var fetchSuggestionsAsync: FetchSuggestionsAsync?
-    
-    /// 搜索结果取值的字段
-    public var fetchedSuggestionsResultOfTitkeKey: String?
-    public var fetchedSuggestionsResultOfSubtitleKey: String?
+    public var fetchSuggestionsAsync: FetchAsync?
     
     /// 输入结束后多少时间触发搜索(单位：毫秒)
     /// 类似'debounce'函数，搜索建议比较频繁的触发时，设置该属性表示在输入
@@ -94,8 +92,8 @@ public class ELTextInput: UITextField {
     public var debounceTimeForFetchingSuggestions: TimeInterval?
     
     /// 搜索建议弹出视图
-    lazy var _poperView: ELPoper = {
-        let poper = ELPoper(refrenceView: self, delegate: self)
+    lazy var _poperView: ELTablePoper = {
+        let poper = ELTablePoper(refrenceView: self, delegate: self)
         return poper
     }()
     
@@ -273,7 +271,7 @@ extension ELTextInput {
                 layer.borderColor = borderColorWhileEditing.cgColor
             }
             if let fetch = fetchSuggestions {
-                fetch(text, onFetchedSuggestions)
+                fetch(text, onNeededKeys, onFetchedSuggestions)
             }
         }
     }
@@ -377,14 +375,19 @@ extension ELTextInput {
     /// 搜索建议触发
     @objc func onStartFetching(_ timer: Timer? = nil) {
         if let fetch = fetchSuggestions {
-            fetch(text, onFetchedSuggestions)
+            fetch(text, onNeededKeys, onFetchedSuggestions)
         }
         else if let fetchAsync = fetchSuggestionsAsync {
-            fetchAsync(text, onFetchedSuggestions)
-//            _poperView.contents = nil
+            fetchAsync(text, onNeededKeys, onFetchedSuggestions)
+            _poperView.contents = nil
             _poperView.show()
         }
         debounceTimer?.fireDate = Date.distantFuture
+    }
+    
+    /// 取搜索建议结果中的值所需的key
+    @objc func onNeededKeys(_ keys: [String]?) {
+        _poperView.valuesKeyInContents = keys
     }
     
     /// 远程搜索建议回调
@@ -395,14 +398,14 @@ extension ELTextInput {
                     _poperView.removeFromSuperview()
                     return
                 }
-//                _poperView.contents = .texts(texts)
+                _poperView.contents = texts
             }
             else if let textsInfo = texts as? [[String: Any]] {
                 if textsInfo.count == 0 {
                     _poperView.removeFromSuperview()
                     return
                 }
-//                _poperView.contents = .keyvalue(textsInfo)
+                _poperView.contents = textsInfo
             }
             _poperView.show()
         }
@@ -433,22 +436,20 @@ extension ELTextInput {
     }
 }
 
-extension ELTextInput: ELPoperProtocol {
+extension ELTextInput: ELTablePoperProtocol {
     /// 已选择建议内容
-    public func onPoperSelect(_ text: String) {
-        self.text = text
+    public func onSelected(at index: Int, with content: Any) {
+        if let content = content as? String {
+            text = content
+        }
+        if let content = content as? [String: Any] {
+            let keys = _poperView.valuesKeyInContents ?? ["value", "subvalue"]
+            text = content[keys[0]] as? String
+        }
     }
     
     /// 建议视图已隐藏
     public func onPoperDismissed() {
         resignFirstResponder()
-    }
-    
-    public func onPoperSelectionTitleKey() -> String {
-        return fetchedSuggestionsResultOfTitkeKey ?? "value"
-    }
-    
-    public func onPoperSelectionSubtitleKey() -> String {
-        return fetchedSuggestionsResultOfSubtitleKey ?? "subvalue"
     }
 }

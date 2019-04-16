@@ -21,8 +21,7 @@ class ViewController: UIViewController {
         
         //        selections()
         
-        //        textInputs()
-        poper()
+                textInputs()
         
         //        numberInput()
     }
@@ -174,8 +173,9 @@ class ViewController: UIViewController {
         view.addSubview(label3)
         y += 35
         let input3 = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
-        input3.fetchSuggestions = { queryString, callback in
-            if let queryString = queryString {
+        input3.fetchSuggestions = { queryString, resultOfKeys, callback in
+            resultOfKeys?(["value", "address"])
+            if let queryString = queryString, queryString != "" {
                 callback(suggestions.map({ ($0["value"] as! String).contains(queryString) ? $0 : nil }).compactMap({ $0 }))
             } else {
                 callback(suggestions)
@@ -191,8 +191,8 @@ class ViewController: UIViewController {
         y += 35
         let input4 = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
         input4.debounceTimeForFetchingSuggestions = 1000
-        input4.fetchedSuggestionsResultOfSubtitleKey = "address"
-        input4.fetchSuggestionsAsync = { queryString, callback in
+        input4.fetchSuggestionsAsync = { queryString, resultOfKeys, callback in
+            resultOfKeys?(["value", "address"])
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: {
                 if let queryString = queryString {
                     callback(suggestions.map({ ($0["value"] as! String).contains(queryString) ? $0 : nil }).compactMap({ $0 }))
@@ -263,26 +263,26 @@ extension ViewController: ELPoperProtocol {
             //            textPoper.animationStyle = .unfold
             //            textPoper.show()
             
-            let tablePoper = ELTablePoper.init(refrenceView: button, delegate: nil)
-            tablePoper.contents =  [[
-                "value": "yizhi",
-                "label": "一致"
-                ], [
-                    "value": "fankui",
-                    "label": "反馈"
-                ], [
-                    "value": "xiaolv",
-                    "label": "效率"
-                ], [
-                    "value": "动画看起来是用来显示一段连续的运动过程",
-                    "label": "可控",
-                    "disabled": true
-                ]]
-            tablePoper.selectionStyle = .value1
-            tablePoper.valuesKeyInContents = ["label", "value"]
-            tablePoper.isMultipleSelection = true
-            tablePoper.selectedColor = UIColor.orange
-            tablePoper.show()
+//            let tablePoper = ELTablePoper.init(refrenceView: button, delegate: nil)
+//            tablePoper.contents =  [[
+//                "value": "yizhi",
+//                "label": "一致"
+//                ], [
+//                    "value": "fankui",
+//                    "label": "反馈"
+//                ], [
+//                    "value": "xiaolv",
+//                    "label": "效率"
+//                ], [
+//                    "value": "动画看起来是用来显示一段连续的运动过程",
+//                    "label": "可控",
+//                    "disabled": true
+//                ]]
+//            tablePoper.selectionStyle = .value1
+//            tablePoper.valuesKeyInContents = ["label", "value"]
+//            tablePoper.isMultipleSelection = true
+//            tablePoper.selectedColor = UIColor.orange
+//            tablePoper.show()
         }
     }
     

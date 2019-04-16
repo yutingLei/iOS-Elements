@@ -25,7 +25,7 @@ import UIKit
 
 @objc public protocol ELTablePoperProtocol: ELPoperProtocol {
     /// 当选项被选中时触发
-    @objc optional func onSelected(at index: Int)
+    @objc optional func onSelected(at index: Int, with content: Any)
     
     /// 在绘制过程中，是否设置选项为选中状态
     ///
@@ -256,7 +256,7 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
     
     /// 选择
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        (delegate as? ELTablePoperProtocol)?.onSelected?(at: indexPath.row)
+        (delegate as? ELTablePoperProtocol)?.onSelected?(at: indexPath.row, with: contents![indexPath.row])
         if let contents = contents as? [[String: Any]] {
             if let isDisabled = contents[indexPath.row]["disabled"] as? Bool, isDisabled {
                 return
