@@ -14,6 +14,7 @@
 		84152D83221D4070001A3242 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 84152D82221D4070001A3242 /* Assets.xcassets */; };
 		84152D86221D4070001A3242 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 84152D84221D4070001A3242 /* LaunchScreen.storyboard */; };
 		84152D8B221D407C001A3242 /* Elements.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8425ECA0221BA4100056C9D7 /* Elements.framework */; };
+		842348EE2265CF180098F011 /* ELSelect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842348ED2265CF180098F011 /* ELSelect.swift */; };
 		8425ECA5221BA4100056C9D7 /* iOS_Elements.h in Headers */ = {isa = PBXBuildFile; fileRef = 8425ECA3221BA4100056C9D7 /* iOS_Elements.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECCE221BAC160056C9D7 /* ELColor.swift */; };
 		8425ECD4221BACD90056C9D7 /* ELIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8425ECD3221BACD90056C9D7 /* ELIcons.swift */; };
@@ -37,6 +38,7 @@
 		84152D82221D4070001A3242 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		84152D85221D4070001A3242 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		84152D87221D4070001A3242 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		842348ED2265CF180098F011 /* ELSelect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELSelect.swift; sourceTree = "<group>"; };
 		8425ECA0221BA4100056C9D7 /* Elements.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Elements.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8425ECA3221BA4100056C9D7 /* iOS_Elements.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iOS_Elements.h; sourceTree = "<group>"; };
 		8425ECA4221BA4100056C9D7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
 				84A8842C225B1CB400E93079 /* ELSelection.swift */,
 				84FCDDB7225C309F00FC1561 /* ELTextInput.swift */,
 				84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */,
+				842348ED2265CF180098F011 /* ELSelect.swift */,
 			);
 			path = Form;
 			sourceTree = "<group>";
@@ -303,6 +306,7 @@
 			files = (
 				84FCDDBC226063CC00FC1561 /* ELNumberInput.swift in Sources */,
 				84FCDDBE226415CF00FC1561 /* ELImagePoper.swift in Sources */,
+				842348EE2265CF180098F011 /* ELSelect.swift in Sources */,
 				846F56A82255E60000ED27CF /* ELButtonTheme.swift in Sources */,
 				84FCDDBA225C7D0900FC1561 /* ELPoper.swift in Sources */,
 				8425ECD0221BAC160056C9D7 /* ELColor.swift in Sources */,

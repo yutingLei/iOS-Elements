@@ -24,8 +24,11 @@
 import UIKit
 
 @objc public protocol ELTablePoperProtocol: ELPoperProtocol {
-    /// 当选项被选中时触发
-    @objc optional func onSelected(at index: Int, with content: Any)
+    /// 单选选中选项时触发
+    @objc optional func onSingleSelected(at index: Int)
+    
+    /// 多选选中选项时触发
+    @objc optional func onMultipleSelected(at indexes: [Int])
     
     /// 在绘制过程中，是否设置选项为选中状态
     ///
@@ -56,13 +59,13 @@ public class ELTablePoper: ELPoper {
     public var selectedColor: UIColor?
     
     /// 选项内容([String] | [[String: Any]])
-    /// 当传入类型为[[String: Any]]时，contents取值，使用'valuesKeyInContents'属性
+    /// 当传入类型为[[String: Any]]时，contents取值，使用'keysOfValue'属性
     public var contents: [Any]?
     
     /// 如果contents类型为[[String: Any]]，必须设置取值的key,
     /// 若不设置，将会默认为["label", "sublabel"]
     /// 第一个key为标题，第二个为子标题
-    public var valuesKeyInContents: [String]?
+    public var keysOfValue: [String]?
     
     /// 表格中的容器视图
     var tableView: UITableView!
@@ -187,8 +190,8 @@ extension ELTablePoper {
         
         /// typeof 'contents' is [[String: Any]]
         if let contents = contents as? [[String: Any]] {
-            let keys = valuesKeyInContents ?? ["value", "subvalue"]
-            assert(keys.count > 0, "The property of 'valuesKeyInContents' that must contain 1 element.")
+            let keys = keysOfValue ?? ["value", "subvalue"]
+            assert(keys.count > 0, "The property of 'keysOfValue' that must contain 1 element.")
             var maxWidth: CGFloat = 0
             for content in contents {
                 var textWidth: CGFloat = 0
@@ -234,8 +237,8 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
         if let contents = contents as? [String] {
             cell?.setText(contents[indexPath.row], valuesKey: nil)
         } else if let contents = contents as? [[String: Any]] {
-            let keys = valuesKeyInContents ?? ["value", "subvalue"]
-            assert(keys.count > 0, "The property of 'valuesKeyInContents' that must contain one element.")
+            let keys = keysOfValue ?? ["value", "subvalue"]
+            assert(keys.count > 0, "The property of 'keysOfValue' that must contain one element.")
             cell?.setText(contents[indexPath.row], valuesKey: keys[0])
             /// sublabel
             if keys.count > 1 {
@@ -256,7 +259,6 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
     
     /// 选择
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        (delegate as? ELTablePoperProtocol)?.onSelected?(at: indexPath.row, with: contents![indexPath.row])
         if let contents = contents as? [[String: Any]] {
             if let isDisabled = contents[indexPath.row]["disabled"] as? Bool, isDisabled {
                 return
@@ -267,8 +269,13 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
                 } else {
                     selectedIndexes.append(indexPath.row)
                 }
+                (delegate as? ELTablePoperProtocol)?.onMultipleSelected?(at: selectedIndexes)
                 tableView.reloadRows(at: [indexPath], with: .none)
                 return
+            } else {
+                selectedIndexes.removeAll()
+                selectedIndexes.append(indexPath.row)
+                (delegate as? ELTablePoperProtocol)?.onSingleSelected?(at: indexPath.row)
             }
         }
         dismiss()

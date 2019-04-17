@@ -387,7 +387,7 @@ extension ELTextInput {
     
     /// 取搜索建议结果中的值所需的key
     @objc func onNeededKeys(_ keys: [String]?) {
-        _poperView.valuesKeyInContents = keys
+        _poperView.keysOfValue = keys
     }
     
     /// 远程搜索建议回调
@@ -443,7 +443,7 @@ extension ELTextInput: ELTablePoperProtocol {
             text = content
         }
         if let content = content as? [String: Any] {
-            let keys = _poperView.valuesKeyInContents ?? ["value", "subvalue"]
+            let keys = _poperView.keysOfValue ?? ["value", "subvalue"]
             text = content[keys[0]] as? String
         }
     }
