@@ -82,7 +82,7 @@ public extension ELColor {
         validValue = validValue.replacingOccurrences(of: "#", with: "")
         
         /// int ARGB
-        if let intValue = Int(validValue, radix: 16) {
+        if let intValue = UInt32(validValue, radix: 16) {
             if validValue.count == 8 {
                 rgba[3] = CGFloat((0xff000000 & intValue) >> 24)
             }
