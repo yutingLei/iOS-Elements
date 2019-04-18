@@ -167,7 +167,7 @@ extension ELTablePoper {
 extension ELTablePoper {
     /// 计算contentView的大小
     func suggestionSizes() -> (CGSize, CGSize) {
-        if isFullScreen {
+        if isFullScreen || contentsFixedSize != nil {
             return suggestionContentSize(of: CGSize.zero)
         }
         
@@ -185,7 +185,7 @@ extension ELTablePoper {
                 let width = content.widthWithLimitHeight(cellHeight)
                 maxWidth = max(width, maxWidth)
             }
-            return suggestionContentSize(of: CGSize(width: maxWidth + 20, height: CGFloat(contents.count) * cellHeight))
+            return suggestionContentSize(of: CGSize(width: maxWidth + 36, height: CGFloat(contents.count) * cellHeight))
         }
         
         /// typeof 'contents' is [[String: Any]]

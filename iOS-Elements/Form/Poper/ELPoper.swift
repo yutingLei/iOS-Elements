@@ -65,6 +65,9 @@ public class ELPoper: UIView {
     /// 内容主题(.light), 在下一次调用'show'方法后更新
     public var theme: Theme = .light
     
+    /// 使箭头位于参考视图中心位置(false)
+    public var isCenteredArrow: Bool!
+    
     /// 参考视图
     private(set) public weak var refrenceView: UIView!
     
@@ -95,6 +98,7 @@ public class ELPoper: UIView {
         self.refrenceView = refrenceView
         self.delegate = delegate
         isFullScreen = false
+        isCenteredArrow = false
         
         contentView = UIView()
         contentView.layer.masksToBounds = true
@@ -336,7 +340,7 @@ extension ELPoper {
             path.addQuadCurve(to: leftBottom.offset(dx: 10, dy: -5), controlPoint: leftBottom.offset(dx: 10))
             path.addLine(to: leftCenter.offset(dx: 10, dy: 10))
         default:
-            let startX = (refRect.minX - contentView.frame.minX) + min(contentView.bounds.width / 2, 50)
+            let startX = (refRect.minX - contentView.frame.minX) + (isCenteredArrow ? contentView.bounds.width / 2 : min(contentView.bounds.width / 2, 50))
             if contentView.frame.minY < refRect.minY {
                 path.move(to: CGPoint(x: startX, y: contentView.bounds.maxY))
                 path.addLine(to: CGPoint(x: startX + 10, y: contentView.bounds.maxY - 10))
