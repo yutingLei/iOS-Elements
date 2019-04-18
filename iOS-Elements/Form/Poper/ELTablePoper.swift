@@ -25,10 +25,10 @@ import UIKit
 
 @objc public protocol ELTablePoperProtocol: ELPoperProtocol {
     /// 单选选中选项时触发
-    @objc optional func onSingleSelected(at index: Int)
+    @objc optional func onSingleSelected(_ poper: ELTablePoper, at index: Int)
     
     /// 多选选中选项时触发
-    @objc optional func onMultipleSelected(at indexes: [Int])
+    @objc optional func onMultipleSelected(_ poper: ELTablePoper, at indexes: [Int])
     
     /// 在绘制过程中，是否设置选项为选中状态
     ///
@@ -263,19 +263,21 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
             if let isDisabled = contents[indexPath.row]["disabled"] as? Bool, isDisabled {
                 return
             }
+            
+            unowned let weakSelf = self
             if isMultipleSelection {
                 if let index = selectedIndexes.firstIndex(of: indexPath.row) {
                     selectedIndexes.remove(at: index)
                 } else {
                     selectedIndexes.append(indexPath.row)
                 }
-                (delegate as? ELTablePoperProtocol)?.onMultipleSelected?(at: selectedIndexes)
+                (delegate as? ELTablePoperProtocol)?.onMultipleSelected?(weakSelf, at: selectedIndexes)
                 tableView.reloadRows(at: [indexPath], with: .none)
                 return
             } else {
                 selectedIndexes.removeAll()
                 selectedIndexes.append(indexPath.row)
-                (delegate as? ELTablePoperProtocol)?.onSingleSelected?(at: indexPath.row)
+                (delegate as? ELTablePoperProtocol)?.onSingleSelected?(weakSelf, at: indexPath.row)
             }
         }
         dismiss()
