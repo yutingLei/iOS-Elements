@@ -261,7 +261,7 @@ class ViewController: UIViewController {
                            [ "value": "十二泷町", "address": "上海市北翟路1444弄81号B幢-107" ],
                            [ "value": "星移浓缩咖啡", "address": "上海市嘉定区新郁路817号" ]]
         
-        let texts = ["Normal", "isDisabled = true", "isMultiple = true"]
+        let texts = ["Normal", "isDisabled = true", "isMultiple = true", "alignItems = .center"]
         let x: CGFloat = 20
         var y: CGFloat = 80
         let w: CGFloat = 250
@@ -274,7 +274,9 @@ class ViewController: UIViewController {
             view.addSubview(label)
             y += 35
             
-            let select = ELSelect(frame: CGRect(x: x, y: y, width: w, height: h))
+            let select = ELSelect(frame: CGRect(x: x, y: y, width: w, height: h), onSelected: { value in
+                print("Selected: \(value)")
+            })
             select.placeholder = "请选择"
             select.contents = suggestions
             if text == "isDisabled = true" {
@@ -282,6 +284,9 @@ class ViewController: UIViewController {
             }
             if text == "isMultiple = true" {
                 select.isMultiple = true
+            }
+            if text == "alignItems = .center" {
+                select.alignItems = .center
             }
             view.addSubview(select)
             y += 45
