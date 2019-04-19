@@ -91,11 +91,16 @@ public class ELTextInput: UITextField {
     /// 结束后一定时间触发一次。
     public var debounceTimeForFetchingSuggestions: TimeInterval?
     
-    /// 搜索建议弹出视图
-    lazy var _poperView: ELTablePoper = {
-        let poper = ELTablePoper(refrenceView: self, delegate: self)
-        return poper
-    }()
+    /// 弹出视图
+    public var tablePoper: ELTablePoper? {
+        get {
+            if fetchSuggestions == nil && fetchSuggestionsAsync == nil {
+                return nil
+            }
+            let poper = ELTablePoper(refrenceView: self, withDelegate: self)
+            return poper
+        }
+    }
     
     /// 左插槽类型
     var leftSlotType: SlotType?
@@ -379,15 +384,15 @@ extension ELTextInput {
         }
         else if let fetchAsync = fetchSuggestionsAsync {
             fetchAsync(text, onNeededKeys, onFetchedSuggestions)
-            _poperView.contents = nil
-            _poperView.show()
+            tablePoper?.contents = nil
+            tablePoper?.show()
         }
         debounceTimer?.fireDate = Date.distantFuture
     }
     
     /// 取搜索建议结果中的值所需的key
     @objc func onNeededKeys(_ keys: [String]?) {
-        _poperView.keysOfValue = keys
+        tablePoper?.keysOfValue = keys ?? ["value", "subvalue"]
     }
     
     /// 远程搜索建议回调
@@ -395,19 +400,19 @@ extension ELTextInput {
         if isFirstResponder {
             if let texts = texts as? [String] {
                 if texts.count == 0 {
-                    _poperView.removeFromSuperview()
+                    tablePoper?.removeFromSuperview()
                     return
                 }
-                _poperView.contents = texts
+                tablePoper?.contents = texts
             }
             else if let textsInfo = texts as? [[String: Any]] {
                 if textsInfo.count == 0 {
-                    _poperView.removeFromSuperview()
+                    tablePoper?.removeFromSuperview()
                     return
                 }
-                _poperView.contents = textsInfo
+                tablePoper?.contents = textsInfo
             }
-            _poperView.show()
+            tablePoper?.show()
         }
     }
 }
@@ -438,18 +443,12 @@ extension ELTextInput {
 
 extension ELTextInput: ELTablePoperProtocol {
     /// 已选择建议内容
-    public func onSelected(at index: Int, with content: Any) {
-        if let content = content as? String {
-            text = content
-        }
-        if let content = content as? [String: Any] {
-            let keys = _poperView.keysOfValue ?? ["value", "subvalue"]
-            text = content[keys[0]] as? String
-        }
+    public func tablePoper(_ poper: ELTablePoper, didSelectedRowsAt indexes: [Int], with values: [String]) {
+        text = values[0]
     }
     
-    /// 建议视图已隐藏
-    public func onPoperDismissed() {
+    /// 当建议视图隐藏后
+    public func onHiddenPoper(_ poper: ELPoper) {
         resignFirstResponder()
     }
 }

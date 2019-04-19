@@ -21,93 +21,433 @@ import UIKit
 /// 弹出视图代理
 @objc public protocol ELPoperProtocol: NSObjectProtocol {
     
-    /// 视图已显示
-    @objc optional func onPoperShown()
+    /// 视图已弹出
+    @objc optional func onShownPoper(_ poper: ELPoper)
     
-    /// 已隐藏
-    @objc optional func onPoperDismissed()
+    /// 视图已隐藏
+    @objc optional func onHiddenPoper(_ poper: ELPoper)
 }
 
 public extension ELPoper {
-    /// 相对参考视图弹出的位置
-    enum Area {
+    
+    /// 弹出位置(相对参考视图)
+    enum Location {
         case left
         case right
         case auto
     }
     
-    /// 弹出时动画样式
+    /// 执行弹出动画样式
     enum AnimationStyle {
         case fade
-        case unfold
+        case unfold // 暂未实现
     }
     
-    /// 弹出视图主题
-    enum Theme {
+    /// 内容容器视图主题
+    enum ContainerTheme {
         case light
         case dark
-//        case custom(UIColor, UIColor, UIColor)
     }
 }
 
-//MARK: - PoperView
 public class ELPoper: UIView {
     
     /// 代理
-    private(set) public weak var delegate: ELPoperProtocol?
+    public weak var delegate: ELPoperProtocol?
     
-    /// 相对于参考视图弹出位置(.auto)
-    public var area: Area = .auto
+    /// 弹出位置(相对参考视图)
+    public var location: Location = .auto
     
-    /// 弹出动画样式(.fade)
+    /// 执行弹出/隐藏动画样式(默认：.fade)
     public var animationStyle: AnimationStyle = .fade
     
-    /// 内容主题(.light), 在下一次调用'show'方法后更新
-    public var theme: Theme = .light
+    /// 内容容器视图主题(默认：.light)
+    public var containerTheme: ContainerTheme = .light { didSet { setTheme() } }
     
-    /// 使箭头位于参考视图中心位置(false)
-    public var isCenteredArrow: Bool!
+    /// 是否全屏(默认：false)
+    public var isFullScreen: Bool = false { didSet { createCloseButton() } }
+    
+    /// 是否占据屏幕宽度(默认：false)
+    /// 当此属性为true时，containerViewLayoutMargin同样生效，所以真正的全屏需设置containerViewLayoutMargin = 0
+    public var isFullWidth: Bool = false
+    
+    /// 容器视图是否为圆角(默认：true)
+    public var isRoundedContainerView: Bool = true
+    
+    /// 是否使用箭头指向参考视图(默认：true)
+    public var isContainedArrow: Bool = true
+    
+    /// 当有箭头时，箭头是否位于参考视图中间(默认：false)
+    public var isArrowCentered: Bool = false
+    
+    /// 当显示弹出内容时，是否形成鲜明对比(默认：true)
+    public var isContrasted: Bool = true { didSet { setContrast() } }
+    
+    /// 设置箭头高度(默认：8)
+    public var suggestionArrowsHeight: CGFloat = 8
+    
+    /// 内容视图固定大小, 当isFullScreen/isFullWidth = true时，设置此属性无效
+    /// 如果设置的size中宽或高为0,表示根据内容自定义宽度或高度
+    public var fixedSizeOfContainerView: CGSize?
     
     /// 参考视图
     private(set) public weak var refrenceView: UIView!
     
-    /// 是否全屏展示(false), 注意：此属性比contentsFixedSize拥有更高的优先级
-    public var isFullScreen: Bool!
+    /// 设置内容视图与容器视图的边距(默认：8)
+    public var contentViewLayoutMargin: CGFloat = 8
     
-    /// 全屏时，关闭按钮
-    lazy var closeBtn: UIButton = {
-        let statusFrame = UIApplication.shared.statusBarFrame
-        let button = UIButton(frame: CGRect(x: bounds.width - 45, y: statusFrame.height + 25, width: 25, height: 25))
-        button.addTarget(self, action: #selector(dismiss), for: .touchUpInside)
-        button.setImage(ELIcon.get(.close), for: .normal)
-        return button
-    }()
+    /// 容器视图与屏幕边距(默认：8)
+    /// 如果有"刘海"，表示距"刘海"的距离
+    public var containerViewLayoutMargin: CGFloat = 8
     
-    /// 展示内容固定大小
-    public var contentsFixedSize: CGSize?
+    /// 内容容器视图(get only)
+    private(set) var containerView: ELShadowView!
     
-    /// 内容视图
-    fileprivate(set) public var contentView: UIView!
+    /// 全屏时，关闭Poper的按钮
+    private(set) public var closeButton: UIButton?
     
-    //MARK: - Init
-    /// 初始化弹出视图
-    public init(refrenceView: UIView, delegate: ELPoperProtocol?) {
+    /// 屏幕宽度/高度
+    var screenWidth = UIScreen.main.bounds.width
+    var screenHeight = UIScreen.main.bounds.height
+    
+    /// 状态栏高度
+    var statusBarHeight = UIApplication.shared.statusBarFrame.height
+    
+    /// 是否更新视图
+    var shouldUpdateContainerView = true
+    
+    ///MARK: - Init poper
+    public init(refrenceView: UIView, withDelegate delegate: ELPoperProtocol?) {
         super.init(frame: UIScreen.main.bounds)
-        backgroundColor = UIColor.black.withAlphaComponent(0.02)
-        
         self.refrenceView = refrenceView
-        self.delegate = delegate
-        isFullScreen = false
-        isCenteredArrow = false
-        
-        contentView = UIView()
-        contentView.layer.masksToBounds = true
-        addSubview(contentView)
+        createContentView()
+        setContrast()
+        setTheme()
     }
     
-    /// 点击空白的地方，取消显示
-    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if refrenceView.isKind(of: UITextField.self) {
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+//MARK: - Create contentView
+extension ELPoper {
+    /// Create contentView
+    func createContentView() {
+        containerView = ELShadowView(frame: CGRect.zero)
+        addSubview(containerView)
+    }
+    
+    /// Create Close button when fullscreen
+    func createCloseButton() {
+        if closeButton == nil {
+            closeButton = UIButton(frame: CGRect(x: screenWidth - 45, y: statusBarHeight + 15, width: 25, height: 25))
+            closeButton?.addTarget(self, action: #selector(onCloseButtonTouched), for: .touchUpInside)
+            closeButton?.setImage(ELIcon.get(.circleCloseOutline), for: .normal)
+            addSubview(closeButton!)
+        }
+        closeButton?.isHidden = !isFullScreen
+    }
+    
+    /// Create a borderLayer for containerView
+    func createContainerViewsBorderLayer() {
+        guard isContainedArrow else {
+            containerView.effectsView.layer.mask = nil
+            containerView.cornerRadius = isRoundedContainerView ? 5 : 0
+            return
+        }
+        containerView.cornerRadius = 0
+        if containerView.effectsView.layer.mask == nil {
+            containerView.effectsView.layer.mask = CAShapeLayer()
+        }
+        
+        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+        
+        /// 内容视图特殊点
+        let arrowHeight = suggestionArrowsHeight
+        
+        /// lt: leftTop     lb: leftBottom      lc: leftCenter
+        /// rt: rightTop    rb: rightBottom     rc: rightCenter
+        let lt = CGPoint.zero
+        let lb = CGPoint(x: 0, y: containerView.bounds.maxY)
+        let lc = CGPoint(x: 0, y: containerView.bounds.midY)
+        
+        let rt = CGPoint(x: containerView.bounds.maxX, y: 0)
+        let rb = CGPoint(x: containerView.bounds.maxX, y: containerView.bounds.maxY)
+        let rc = CGPoint(x: containerView.bounds.maxX, y: containerView.bounds.midY)
+        
+        let bezierPath = UIBezierPath()
+        bezierPath.lineWidth = 1
+        
+        switch location {
+        case .left:
+            bezierPath.move(to: rc)
+            bezierPath.addLine(to: rc.offset(dx: -arrowHeight, dy: -arrowHeight))
+            bezierPath.addLine(to: rt.offset(dx: -arrowHeight, dy: 5))
+            bezierPath.addQuadCurve(to: rt.offset(dx: -(arrowHeight + 5)), controlPoint: rt.offset(dx: -arrowHeight))
+            bezierPath.addLine(to: lt.offset(dx: 5))
+            bezierPath.addQuadCurve(to: lt.offset(dy: 5), controlPoint: lt)
+            bezierPath.addLine(to: lb.offset(dy: -5))
+            bezierPath.addQuadCurve(to: lb.offset(dx: 5), controlPoint: lb)
+            bezierPath.addLine(to: rb.offset(dx: -(arrowHeight + 5)))
+            bezierPath.addQuadCurve(to: rb.offset(dx: -arrowHeight, dy: -5), controlPoint: rb.offset(dx: -arrowHeight))
+            bezierPath.addLine(to: rc.offset(dx: -arrowHeight, dy: arrowHeight))
+        case .right:
+            bezierPath.move(to: lc)
+            bezierPath.addLine(to: lc.offset(dx: arrowHeight, dy: -arrowHeight))
+            bezierPath.addLine(to: lt.offset(dx: arrowHeight, dy: 5))
+            bezierPath.addQuadCurve(to: lt.offset(dx: arrowHeight + 5), controlPoint: lt.offset(dx: arrowHeight))
+            bezierPath.addLine(to: rt.offset(dx: -5))
+            bezierPath.addQuadCurve(to: rt.offset(dy: 5), controlPoint: rt)
+            bezierPath.addLine(to: rb.offset(dy: -5))
+            bezierPath.addQuadCurve(to: rb.offset(dx: -5), controlPoint: rb)
+            bezierPath.addLine(to: lb.offset(dx: arrowHeight + 5))
+            bezierPath.addQuadCurve(to: lb.offset(dx: arrowHeight, dy: -5), controlPoint: lb.offset(dx: arrowHeight))
+            bezierPath.addLine(to: lc.offset(dx: arrowHeight, dy: arrowHeight))
+        default:
+            let x = refRect.minX - containerView.frame.minX + (isArrowCentered ? (refRect.width / 2) : min(refRect.width / 2, 50))
+            if containerView.frame.minY < refRect.minY {
+                bezierPath.move(to: CGPoint(x: x, y: containerView.bounds.maxY))
+                bezierPath.addLine(to: CGPoint(x: x + arrowHeight, y: containerView.bounds.maxY - arrowHeight))
+                bezierPath.addLine(to: rb.offset(dx: -5, dy: -arrowHeight))
+                bezierPath.addQuadCurve(to: rb.offset(dy: -(arrowHeight + 5)), controlPoint: rb.offset(dy: -arrowHeight))
+                bezierPath.addLine(to: rt.offset(dy: 5))
+                bezierPath.addQuadCurve(to: rt.offset(dx: -5), controlPoint: rt)
+                bezierPath.addLine(to: lt.offset(dx: 5))
+                bezierPath.addQuadCurve(to: lt.offset(dy: 5), controlPoint: lt)
+                bezierPath.addLine(to: lb.offset(dy: -(arrowHeight + 5)))
+                bezierPath.addQuadCurve(to: lb.offset(dx: 5, dy: -arrowHeight), controlPoint: lb.offset(dy: -arrowHeight))
+                bezierPath.addLine(to: CGPoint(x: x - arrowHeight, y: containerView.bounds.maxY - arrowHeight))
+            } else {
+                bezierPath.move(to: CGPoint(x: x, y: 0))
+                bezierPath.addLine(to: CGPoint(x: x + arrowHeight, y: arrowHeight))
+                bezierPath.addLine(to: rt.offset(dx: -5, dy: arrowHeight))
+                bezierPath.addQuadCurve(to: rt.offset(dy: arrowHeight + 5), controlPoint: rt.offset(dy: arrowHeight))
+                bezierPath.addLine(to: rb.offset(dy: -5))
+                bezierPath.addQuadCurve(to: rb.offset(dx: -5), controlPoint: rb)
+                bezierPath.addLine(to: lb.offset(dx: 5))
+                bezierPath.addQuadCurve(to: lb.offset(dy: -5), controlPoint: lb)
+                bezierPath.addLine(to: lt.offset(dy: arrowHeight + 5))
+                bezierPath.addQuadCurve(to: lt.offset(dx: 5, dy: arrowHeight), controlPoint: lt.offset(dy: arrowHeight))
+                bezierPath.addLine(to: CGPoint(x: x - arrowHeight, y: arrowHeight))
+            }
+        }
+        bezierPath.close()
+        (containerView.effectsView.layer.mask as? CAShapeLayer)?.path = bezierPath.cgPath
+    }
+    
+    /// On touched close button
+    @objc func onCloseButtonTouched() { hide() }
+}
+
+//MARK: - Settings
+extension ELPoper {
+    /// The theme's setting
+    @objc func setTheme() {
+        switch containerTheme {
+        case .light:
+            containerView.effectsView.backgroundColor = .white
+            closeButton?.titleLabel?.textColor = ELColor.rgb(54, 55, 56)
+            closeButton?.imageView?.image = closeButton?.imageView?.image?.stroked(by: UIColor.black)
+        default:
+            containerView.effectsView.backgroundColor = ELColor.rgb(54, 55, 56)
+            closeButton?.titleLabel?.textColor = ELColor.rgb(54, 55, 56)
+            closeButton?.imageView?.image = closeButton?.imageView?.image?.stroked(by: UIColor.white)
+        }
+    }
+    
+    /// Set contrast
+    func setContrast() {
+        backgroundColor = isContrasted ? UIColor.black.withAlphaComponent(0.15) : .clear
+    }
+    
+    /// 根据需弹出的内容大小，计算容器内容视图的大小
+    func calculateContainerViewsSize(with contentSize: CGSize) {
+        
+        /// 若果是全屏
+        if isFullScreen {
+            containerView.frame.size = UIScreen.main.bounds.size
+            return
+        }
+        
+        /// 声明容器视图大小
+        var containerViewsSize = CGSize.zero
+        
+        /// 如果设置了全屏宽度
+        if isFullWidth {
+            containerViewsSize.width = screenWidth
+        }
+        
+        /// 如果固定不为空大小
+        if let fixedSize = fixedSizeOfContainerView {
+            if fixedSize.width != 0 {
+                containerViewsSize.width = fixedSize.width
+            }
+            if fixedSize.height != 0 {
+                containerViewsSize.height = fixedSize.height
+            }
+        }
+        
+        /// 根据弹出位置，设置容器视图的大小
+        if containerViewsSize.width == 0 {
+            containerViewsSize.width = contentSize.width + contentViewLayoutMargin * 2 + (location == .auto ? 0 : suggestionArrowsHeight)
+        }
+        if containerViewsSize.height == 0 {
+            containerViewsSize.height = contentSize.height + contentViewLayoutMargin * 2 + (location == .auto ? suggestionArrowsHeight : 0)
+        }
+        containerView.frame.size = containerViewsSize
+    }
+    
+    /// 计算容器视图以及内容视图的具体位置
+    func calculateContainerViewsRect() {
+        
+        /// 参考视图位置及大小
+        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+        
+        /// 如果是全屏或屏幕宽度
+        if isFullScreen || isFullWidth {
+            containerView.frame.origin = CGPoint.zero
+            if isFullWidth {
+                if refRect.midY >= screenHeight / 2 {
+                    containerView.frame.origin.y = refRect.minY - containerView.frame.height
+                } else {
+                    containerView.frame.origin.y = refRect.maxY
+                }
+            }
+            return
+        }
+        
+        /// 根据弹出位置，计算容器视图位置
+        switch location {
+        case .left:
+            containerView.frame.origin.x = refRect.minX - containerView.frame.width
+            containerView.frame.origin.y = refRect.midY - containerView.frame.height / 2
+        case .right:
+            containerView.frame.origin.x = refRect.maxX
+            containerView.frame.origin.y = refRect.midY - containerView.frame.height / 2
+        default:
+            if refRect.midY >= screenHeight / 2 {
+                containerView.frame.origin.x = refRect.minX
+                containerView.frame.origin.y = refRect.minY - containerView.frame.height
+            } else {
+                containerView.frame.origin.x = refRect.minX
+                containerView.frame.origin.y = refRect.maxY
+            }
+        }
+        sizeContainerViewToScreen()
+    }
+    
+    /// 已知容器视图的位置及大小，适配屏幕宽度和高度
+    func sizeContainerViewToScreen() {
+        guard !isFullScreen else { return }
+        if isFullWidth {
+            if containerView.frame.origin.y < (statusBarHeight + containerViewLayoutMargin) {
+                containerView.frame.size.height = (statusBarHeight + containerViewLayoutMargin) - containerView.frame.origin.y
+                containerView.frame.origin.y = statusBarHeight + containerViewLayoutMargin
+            } else if containerView.frame.maxY > screenHeight {
+                containerView.frame.size.height -= (containerView.frame.maxY - screenHeight + containerViewLayoutMargin)
+            }
+            return
+        }
+        
+        /// 参考视图位置及大小
+        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+        
+        /// 根据弹出位置，适配容器视图大小及位置
+        switch location {
+        case .left, .right:
+            /// 宽度适配
+            if location == .left {
+                if containerView.frame.origin.x < containerViewLayoutMargin {
+                    containerView.frame.origin.x = containerViewLayoutMargin
+                    containerView.frame.size.width = refRect.minX - containerView.frame.minX
+                }
+            } else {
+                if containerView.frame.maxX > screenWidth {
+                    containerView.frame.size.width = screenWidth - containerViewLayoutMargin - refRect.maxX
+                }
+            }
+            /// 高度适配
+            if containerView.frame.origin.y < (statusBarHeight + containerViewLayoutMargin) {
+                containerView.frame.size.height = (statusBarHeight + containerViewLayoutMargin) - containerView.frame.origin.y
+                containerView.frame.origin.y = statusBarHeight + containerViewLayoutMargin
+            }
+            if containerView.frame.maxY > screenHeight {
+                containerView.frame.size.height -= (containerView.frame.maxY - screenHeight + containerViewLayoutMargin)
+            }
+        default:
+            /// 高度适配
+            if containerView.frame.origin.y < (statusBarHeight + containerViewLayoutMargin) {
+                containerView.frame.size.height = (statusBarHeight + containerViewLayoutMargin) - containerView.frame.origin.y
+                containerView.frame.origin.y = statusBarHeight + containerViewLayoutMargin
+            } else if containerView.frame.maxY > screenHeight {
+                containerView.frame.size.height -= (containerView.frame.maxY - (screenHeight - containerViewLayoutMargin))
+            }
+            
+            /// 宽度适配
+            if containerView.frame.maxX > (screenWidth - containerViewLayoutMargin) {
+                containerView.frame.origin.x -= (containerView.frame.maxX - (screenWidth - containerViewLayoutMargin))
+            }
+            if containerView.frame.minX < containerViewLayoutMargin {
+                containerView.frame.origin.x = containerViewLayoutMargin
+                containerView.frame.size.width = screenWidth - containerViewLayoutMargin * 2
+            }
+        }
+    }
+}
+
+//MARK: - Animations while showing and hiding
+extension ELPoper {
+    /// Animation for showing
+    func showsAnimate(_ completed: ((Bool) -> Void)?) {
+        if animationStyle == .fade {
+            alpha = 0.1
+            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
+                self.alpha = 1.0
+            }, completion: completed)
+        } else {
+            let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+            var fromRect = containerView.frame
+            let toRect = containerView.frame
+            if containerView.frame.midY <= refRect.midY {
+                fromRect.origin.y = refRect.minY
+            }
+            fromRect.size.height = 0
+            containerView.frame = fromRect
+            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
+                self.containerView.frame = toRect
+            }, completion: completed)
+        }
+    }
+    
+    /// Animation for hiding
+    func hideAnimate(_ completed: ((Bool) -> Void)?) {
+        if animationStyle == .fade {
+            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
+                self.alpha = 0.1
+            }, completion: completed)
+        } else {
+            let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+            let fromRect = containerView.frame
+            var toRect = containerView.frame
+            if containerView.frame.midY <= refRect.midY {
+                toRect.origin.y = refRect.minY
+            }
+            toRect.size.height = 0
+            containerView.frame = fromRect
+            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
+                self.containerView.setNeedsLayout()
+                self.containerView.frame = toRect
+            }, completion: completed)
+        }
+    }
+}
+
+//MARK: - Public functions
+public extension ELPoper {
+    /// 参考视图是输入框，且isEnabled = true，那么点击参考视图范围内，将不会隐藏Poper视图
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if let refView = refrenceView as? UITextField, refView.isEnabled == false {
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
             if let touch = touches.first {
                 let point = touch.location(in: self)
@@ -116,360 +456,38 @@ public class ELPoper: UIView {
                 }
             }
         }
-        dismiss()
+        hide()
     }
     
-    required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-}
-
-////MARK: - Pop & Dismiss
-public extension ELPoper {
-    
-    /// 显示弹出视图
-    /// 未dismiss之前再次调用相当于更新视图，可能会改变大小
+    /// Show poper with given animation style
     @objc func show() {
-
-        if !isFullScreen {
-            if let sublayers = contentView.layer.sublayers {
-                _ = sublayers.map({ ($0 is CAShapeLayer) ? $0.removeFromSuperlayer() : nil })
-            }
-            contentView.layer.mask = nil
-            createMaskLayer()
+        if shouldUpdateContainerView && isContainedArrow && !isFullScreen {
+            shouldUpdateContainerView = false
+            createContainerViewsBorderLayer()
         }
         
         if superview == nil {
             UIApplication.shared.keyWindow?.addSubview(self)
-            startAnimation(forShow: true) {[unowned self] _ in
-                self.delegate?.onPoperShown?()
+            showsAnimate {[unowned self] _ in
+                unowned let weakSelf = self
+                self.delegate?.onShownPoper?(weakSelf)
             }
         }
     }
     
-    /// 隐藏弹出视图
-    /// 注意：多数时候无需手动调用(输入框情况除外)
-    ///      当参考视图是一个输入框时，点击输入框区域将不会自动隐藏
-    @objc func dismiss() {
+    /// Hide poper with given animation style
+    func hide() {
         if let keyWindow = UIApplication.shared.keyWindow {
-            for subview in keyWindow.subviews {
-                if subview is ELPoper {
-                    startAnimation(forShow: false) {[unowned self] _ in
-                        self.delegate?.onPoperDismissed?()
-                        subview.removeFromSuperview()
+            for view in keyWindow.subviews {
+                if view is ELPoper {
+                    hideAnimate {[unowned self] _ in
+                        unowned let weakSelf = self
+                        view.removeFromSuperview()
+                        self.delegate?.onHiddenPoper?(weakSelf)
                     }
                 }
             }
         }
-    }
-}
-
-//MARK: - Calculate subview's rect of contentView
-extension ELPoper {
-    /// 根据内容计算内容视图的大小
-    func suggestionContentSize(of size: CGSize) -> (CGSize, CGSize) {
-        if isFullScreen {
-            return (bounds.size, bounds.size)
-        }
-        
-        /// 左右上下边距(8), 箭头宽高(10)
-        if let fixedSize = contentsFixedSize {
-            switch area {
-            case .left, .right:
-                return (CGSize(width: fixedSize.width - 26, height: fixedSize.height - 16), fixedSize)
-            default:
-                return (CGSize(width: fixedSize.width - 16, height: fixedSize.height - 26), fixedSize)
-            }
-        }
-        
-        var contentSize = CGSize.zero
-        /// Margin Left&Right = 8
-        /// Margin Top&Bottom = 8
-        /// Arrow's width&height = 10
-        switch area {
-        case .left, .right:
-            contentSize.width += (size.width + 26)
-            contentSize.height += (size.height + 16)
-        default:
-            contentSize.width += (size.width + 16)
-            contentSize.height += (size.height + 26)
-        }
-        
-        return (size, contentSize)
-    }
-    
-    /// 计算弹出视图的位置及大小
-    func suggestionRects(with sizes: (CGSize, CGSize)) -> (CGRect, CGRect) {
-        
-        if isFullScreen {
-            return (CGRect(origin: CGPoint.zero, size: sizes.0), CGRect(origin: CGPoint.zero, size: sizes.1))
-        }
-        
-        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-        
-        /// 屏幕宽高及状态栏高度
-        let screenWidth = UIScreen.main.bounds.width
-        let screenHeight = UIScreen.main.bounds.height
-        let statusBarHeight = UIApplication.shared.statusBarFrame.height
-        
-        let subviewSize = sizes.0
-        let contentSize = sizes.1
-        
-        /// 根据位置计算弹出的选择框视图位置
-        var subviewRect = CGRect(origin: CGPoint.zero, size: subviewSize)
-        var contentRect = CGRect(origin: CGPoint.zero, size: contentSize)
-        switch area {
-        case .left:
-            subviewRect.origin.x = 8
-            subviewRect.origin.y = 8
-            contentRect.origin.x = refRect.minX - contentSize.width
-            contentRect.origin.y = refRect.midY - contentSize.height / 2
-            if contentRect.minX < 10, contentsFixedSize == nil {
-                contentRect.origin.x = 10
-                contentRect.size.width = refRect.minX - 10
-            }
-        case .right:
-            subviewRect.origin.x = 18
-            subviewRect.origin.y = 8
-            contentRect.origin.x = refRect.maxX
-            contentRect.origin.y = refRect.midY - contentSize.height / 2
-            if contentRect.maxX > screenWidth - 10, contentsFixedSize == nil {
-                contentRect.size.width = screenWidth - 10 - refRect.maxX
-            }
-        default:
-            if (refRect.midY > screenHeight / 2) {
-                subviewRect.origin.x = 8
-                subviewRect.origin.y = 8
-                contentRect.origin.x = refRect.minX
-                contentRect.origin.y = refRect.minY - contentSize.height
-                if contentRect.minY < statusBarHeight {
-                    contentRect.origin.y = statusBarHeight + 10
-                    contentRect.size.height = refRect.minY - contentRect.origin.y
-                }
-            } else {
-                subviewRect.origin.x = 8
-                subviewRect.origin.y = 18
-                contentRect.origin.x = refRect.minX
-                contentRect.origin.y = refRect.maxY
-                if contentRect.maxY > screenHeight - 20 {
-                    contentRect.size.height = screenHeight - 20 - refRect.maxY
-                }
-            }
-        }
-        
-        /// 位置在左右时，适配高度
-        if area == .left || area == .right {
-            if contentRect.minY < statusBarHeight + 10 {
-                contentRect.origin.y = statusBarHeight + 10
-                if contentRect.maxY > screenHeight - 20 {
-                    contentRect.size.height = screenHeight - contentRect.origin.y - 20
-                }
-            }
-            
-            if contentRect.maxY > screenHeight - 20 {
-                contentRect.origin.y -= (contentRect.maxY - screenHeight + 20)
-                if contentRect.minY > statusBarHeight + 10 {
-                    contentRect.origin.y = statusBarHeight + 10
-                    contentRect.size.height = (screenHeight - statusBarHeight - 30)
-                }
-            }
-            subviewRect.size.width = contentRect.width - 26
-            subviewRect.size.height = contentRect.height - 16
-        }
-            
-        /// 位置在上下时，适配宽度
-        else {
-            if contentRect.maxX > screenWidth - 10 {
-                contentRect.origin.x -= (contentRect.maxX - screenWidth + 10)
-                if contentRect.minX < 10, contentsFixedSize == nil {
-                    contentRect.origin.x = 10
-                    contentRect.size.width = screenWidth - 20
-                }
-            }
-            
-            if contentRect.minX < 10, contentsFixedSize == nil {
-                contentRect.origin.x = 10
-                if contentRect.maxX > screenWidth - 10 {
-                    contentRect.size.width = screenWidth - 20
-                }
-            }
-            subviewRect.size.width = contentRect.width - 16
-            subviewRect.size.height = contentRect.height - 26
-        }
-        return (subviewRect, contentRect)
-    }
-
-    /// 创建遮罩
-    func createMaskLayer() {
-        
-        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-
-        /// 内容视图特殊点
-        let leftTop = CGPoint(x: 0, y: 0)
-        let rightTop = CGPoint(x: contentView.bounds.maxX, y: 0)
-        let leftBottom = CGPoint(x: 0, y: contentView.bounds.maxY)
-        let rightBottom = CGPoint(x: contentView.bounds.maxX, y: contentView.bounds.maxY)
-        let leftCenter = CGPoint(x: 0, y: contentView.bounds.midY)
-        let rightCenter = CGPoint(x: contentView.bounds.maxX, y: contentView.bounds.midY)
-
-        let path = UIBezierPath()
-        path.lineWidth = 1.0
-        switch area {
-        case .left:
-            path.move(to: rightCenter)
-            path.addLine(to: rightCenter.offset(dx: -10, dy: -10))
-            path.addLine(to: rightTop.offset(dx: -10, dy: 5))
-            path.addQuadCurve(to: rightTop.offset(dx: -15), controlPoint: rightTop.offset(dx: -10))
-            path.addLine(to: leftTop.offset(dx: 5))
-            path.addQuadCurve(to: leftTop.offset(dy: 5), controlPoint: leftTop)
-            path.addLine(to: leftBottom.offset(dy: -5))
-            path.addQuadCurve(to: leftBottom.offset(dx: 5), controlPoint: leftBottom)
-            path.addLine(to: rightBottom.offset(dx: -15))
-            path.addQuadCurve(to: rightBottom.offset(dx: -10, dy: -5), controlPoint: rightBottom.offset(dx: -10))
-            path.addLine(to: rightCenter.offset(dx: -10, dy: 10))
-        case .right:
-            path.move(to: leftCenter)
-            path.addLine(to: leftCenter.offset(dx: 10, dy: -10))
-            path.addLine(to: leftTop.offset(dx: 10, dy: 5))
-            path.addQuadCurve(to: leftTop.offset(dx: 15), controlPoint: leftTop.offset(dx: 10))
-            path.addLine(to: rightTop.offset(dx: -5))
-            path.addQuadCurve(to: rightTop.offset(dy: 5), controlPoint: rightTop)
-            path.addLine(to: rightBottom.offset(dy: -5))
-            path.addQuadCurve(to: rightBottom.offset(dx: -5), controlPoint: rightBottom)
-            path.addLine(to: leftBottom.offset(dx: 15))
-            path.addQuadCurve(to: leftBottom.offset(dx: 10, dy: -5), controlPoint: leftBottom.offset(dx: 10))
-            path.addLine(to: leftCenter.offset(dx: 10, dy: 10))
-        default:
-            let startX = (refRect.minX - contentView.frame.minX) + (isCenteredArrow ? contentView.bounds.width / 2 : min(contentView.bounds.width / 2, 50))
-            if contentView.frame.minY < refRect.minY {
-                path.move(to: CGPoint(x: startX, y: contentView.bounds.maxY))
-                path.addLine(to: CGPoint(x: startX + 10, y: contentView.bounds.maxY - 10))
-                path.addLine(to: rightBottom.offset(dx: -5, dy: -10))
-                path.addQuadCurve(to: rightBottom.offset(dy: -15), controlPoint: rightBottom.offset(dy: -10))
-                path.addLine(to: rightTop.offset(dy: 5))
-                path.addQuadCurve(to: rightTop.offset(dx: -5), controlPoint: rightTop)
-                path.addLine(to: leftTop.offset(dx: 5))
-                path.addQuadCurve(to: leftTop.offset(dy: 5), controlPoint: leftTop)
-                path.addLine(to: leftBottom.offset(dy: -15))
-                path.addQuadCurve(to: leftBottom.offset(dx: 5, dy: -10), controlPoint: leftBottom.offset(dy: -10))
-                path.addLine(to: CGPoint.init(x: startX - 10, y: contentView.bounds.maxY - 10))
-            } else {
-                path.move(to: CGPoint(x: startX, y: 0))
-                path.addLine(to: CGPoint(x: startX + 10, y: 10))
-                path.addLine(to: rightTop.offset(dx: -5, dy: 10))
-                path.addQuadCurve(to: rightTop.offset(dy: 15), controlPoint: rightTop.offset(dy: 10))
-                path.addLine(to: rightBottom.offset(dy: -5))
-                path.addQuadCurve(to: rightBottom.offset(dx: -5), controlPoint: rightBottom)
-                path.addLine(to: leftBottom.offset(dx: 5))
-                path.addQuadCurve(to: leftBottom.offset(dy: -5), controlPoint: leftBottom)
-                path.addLine(to: leftTop.offset(dy: 15))
-                path.addQuadCurve(to: leftTop.offset(dx: 5, dy: 10), controlPoint: leftTop.offset(dy: 10))
-                path.addLine(to: CGPoint(x: startX - 10, y: 10))
-            }
-        }
-        path.close()
-        contentView.layer.mask = {
-            let maskLayer = CAShapeLayer()
-            maskLayer.path = path.cgPath
-            return maskLayer
-        }()
-        updateTheme()
-    }
-
-    /// 更新内容视图主题
-    @objc func updateTheme() {
-        /// border layer
-        var borderLayer: CAShapeLayer?
-        if let contentSublayers = contentView.layer.sublayers {
-            for contentSublayer in contentSublayers {
-                if let shapeLayer = contentSublayer as? CAShapeLayer {
-                    borderLayer = shapeLayer
-                }
-            }
-        }
-
-        switch theme {
-        case .light:
-            if borderLayer == nil {
-                borderLayer = CAShapeLayer()
-                borderLayer?.fillColor = nil
-                contentView.layer.addSublayer(borderLayer!)
-            }
-            borderLayer?.frame = contentView.bounds
-            borderLayer?.path = (contentView.layer.mask as? CAShapeLayer)?.path
-            borderLayer?.strokeColor = ELColor.rgb(200, 200, 200).cgColor
-            if isFullScreen {
-                closeBtn.imageView?.image = ELIcon.get(.close)
-            }
-            contentView.backgroundColor = .white
-        case .dark:
-            borderLayer?.removeFromSuperlayer()
-            if isFullScreen {
-                closeBtn.imageView?.image = ELIcon.get(.close)?.stroked(by: UIColor.white)
-            }
-            contentView.backgroundColor = ELColor.rgb(54, 55, 56)
-        }
-    }
-
-    /// 动画执行
-    func startAnimation(forShow isShow: Bool, onCompletion: ((Bool) -> Void)?) {
-        switch animationStyle {
-        case .fade:
-            if isShow {
-                alpha = 0.1
-            }
-            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
-                self.alpha = isShow ? 1.0 : 0.1
-            }, completion: onCompletion)
-        case .unfold:
-            var sourceRect = contentView.frame
-            var destRect = contentView.frame
-            switch area {
-            case .left:
-                sourceRect = isShow ? sourceRect.offset(dx: sourceRect.width) : sourceRect
-                destRect = isShow ? destRect : destRect.offset(dx: destRect.width)
-            case .right:
-                sourceRect = isShow ? sourceRect.subtract(dw: sourceRect.width) : sourceRect
-                destRect = isShow ? destRect : destRect.subtract(dw: destRect.width)
-            default:
-                let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-                if sourceRect.minY < refRect.minY {
-                    sourceRect = isShow ? sourceRect.offset(dy: sourceRect.height) : sourceRect
-                    destRect = isShow ? destRect : destRect.offset(dy: destRect.height)
-                } else {
-                    sourceRect = isShow ? sourceRect.subtract(dh: sourceRect.height) : sourceRect
-                    destRect = isShow ? destRect : destRect.subtract(dh: destRect.height)
-                }
-            }
-            contentView.frame = sourceRect
-            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
-                self.contentView.frame = destRect
-                self.alpha = isShow ? 1.0 : 0.1
-            }, completion: onCompletion)
-        }
-    }
-}
-
-//MARK: - String Extensions
-internal extension String {
-    /// Get text width with given limit height
-    func widthWithLimitHeight(_ lh: CGFloat, fontSize: CGFloat = 15) -> CGFloat {
-        return sizeWithLimits(lh: lh, fontSize: fontSize).width
-    }
-    
-    /// Get text height with given limit width
-    func heightWithLimitWidth(_ lw: CGFloat, fontSize: CGFloat = 15) -> CGFloat {
-        return sizeWithLimits(lw, fontSize: fontSize).height
-    }
-    
-    /// Get text size with given limits(width & height)
-    func sizeWithLimits(_ lw: CGFloat = .infinity, lh: CGFloat = .infinity, fontSize: CGFloat = 15) -> CGSize {
-        let limitSize = CGSize(width: lw, height: lh)
-        let font = UIFont.systemFont(ofSize: fontSize)
-        return (self as NSString).boundingRect(with: limitSize,
-                                               options: .usesLineFragmentOrigin,
-                                               attributes: [.font: font],
-                                               context: nil).size
     }
 }
 
@@ -483,36 +501,67 @@ extension CGPoint {
     }
 }
 
-//MARK: - CGRect Extensions
-extension CGRect {
-
-    /// 偏移x,y
-    ///
-    /// - Parameters:
-    ///   - dx: 偏移的x值
-    ///   - dy: 偏移的y值
-    ///   - sync: 是否同步减少宽度高度,默认true
-    func offset(dx: CGFloat = 0, dy: CGFloat = 0, sync: Bool = true) -> CGRect {
-        var newRect = self
-        newRect.origin.x += dx
-        newRect.origin.y += dy
-        if sync {
-            newRect.size.width -= dx
-            newRect.size.height -= dy
-        }
-        return newRect
+class ELShadowView: UIView {
+    /// The view that make shadow effectively
+    var effectsView: UIView!
+    
+    /// Corner rounded
+    var cornerRadius: CGFloat {
+        get { return effectsView.layer.cornerRadius }
+        set { effectsView.layer.cornerRadius = newValue }
     }
-
-    /// 减少Rect宽高
-    ///
-    /// - Parameters:
-    ///   - dw: 减去的宽度
-    ///   - dh: 减去的高度
-    /// - Returns: 新的Rect
-    func subtract(dw: CGFloat = 0, dh: CGFloat = 0) -> CGRect {
-        var newRect = self
-        newRect.size.width -= dw
-        newRect.size.height -= dh
-        return newRect
+    
+    /// Shadow radius
+    var radius: CGFloat {
+        get { return layer.shadowRadius }
+        set { layer.shadowRadius = newValue }
+    }
+    
+    /// Shadow opacity
+    var opacity: Float {
+        get { return layer.shadowOpacity }
+        set { layer.shadowOpacity = newValue }
+    }
+    
+    /// Shadow's color
+    var color: CGColor? {
+        get { return layer.shadowColor }
+        set { layer.shadowColor = newValue }
+    }
+    
+    /// Shadow's offset
+    var offset: CGSize {
+        get { return layer.shadowOffset }
+        set { layer.shadowOffset = newValue }
+    }
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        
+        backgroundColor = .clear
+        layer.shadowOpacity = 0.2
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowRadius = 3
+        layer.shadowOffset = CGSize(width: 0, height: 0.5)
+        
+        createEffectsView()
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    /// Create a view that make shadow effectively
+    func createEffectsView() {
+        effectsView = UIView()
+        effectsView.layer.masksToBounds = true
+        effectsView.backgroundColor = .white
+        addSubview(effectsView)
+        
+        effectsView.translatesAutoresizingMaskIntoConstraints = false
+        effectsView.topAnchor.constraint(equalTo: topAnchor).isActive = true
+        effectsView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+        effectsView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        effectsView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
     }
 }

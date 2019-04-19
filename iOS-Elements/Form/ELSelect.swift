@@ -62,7 +62,7 @@ public class ELSelect: UIView {
     
     /// 弹出视图
     lazy var tablePoper: ELTablePoper = {
-        let tablePoper = ELTablePoper(refrenceView: self, delegate: self)
+        let tablePoper = ELTablePoper(refrenceView: self, withDelegate: self)
         tablePoper.animationStyle = .unfold
         return tablePoper
     }()

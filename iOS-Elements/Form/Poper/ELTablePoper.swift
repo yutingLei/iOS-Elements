@@ -24,39 +24,48 @@
 import UIKit
 
 @objc public protocol ELTablePoperProtocol: ELPoperProtocol {
-    /// 单选选中选项时触发
-    @objc optional func onSingleSelected(_ poper: ELTablePoper, at index: Int)
-    
-    /// 多选选中选项时触发
-    @objc optional func onMultipleSelected(_ poper: ELTablePoper, at indexes: [Int])
-    
+
     /// 在绘制过程中，是否设置选项为选中状态
     ///
-    /// - Parameter index: 第index个选项
-    /// - Returns: true: 选中状态，false: 未选中状态
-    @objc optional func isSelected(at index: Int) -> Bool
+    /// - Parameters:
+    ///   - poper: 协议中的TablePoper对象
+    ///   - index: Table中第row项是否选中
+    /// - Returns: true: 选中, false: 不选中
+    @objc optional func tablePoper(_ poper: ELTablePoper, setSelectedRowAt index: Int) -> Bool
     
     /// 在绘制过程中，该选项是否禁用
     /// 如果含有"disabled"字段，则以"disabled"字段为准
     ///
-    /// - Parameter index: 第index个选项
-    /// - Returns: true: 禁用，false: 不禁用
-    @objc optional func isDisabled(at index: Int) -> Bool
+    /// - Parameters:
+    ///   - poper: 协议中的TablePoper对象
+    ///   - index: Table中第row项是否禁用
+    /// - Returns: true: 禁用, false: 不禁用
+    @objc optional func tablePoper(_ poper: ELTablePoper, setDisabledRowAt index: Int) -> Bool
+    
+    /// 当点击TablePoper中的cell时触发
+    /// 单选时：indexes和values只有一个值
+    /// 多选时：indexes和values可以有0个值
+    ///
+    /// - Parameters:
+    ///   - poper: 协议中的TablePoper对象
+    ///   - index: 点击的是Table中第row项
+    ///   - value: 对应的值
+    @objc optional func tablePoper(_ poper: ELTablePoper, didSelectedRowsAt indexes: [Int], with values: [String])
 }
 
 public class ELTablePoper: ELPoper {
     
     /// 多选
-    public var isMultipleSelection: Bool!
+    public var isMultipleSelection: Bool = false
     
     /// 显示加载动画指示器，当内容为空时.
-    public var showActivityIndicatorWhenNullContents: Bool!
+    public var showActivityIndicatorWhenNullContents: Bool = true
     
-    /// 显示模板
-    public var selectionStyle: UITableViewCell.CellStyle!
+    /// 选择模板
+    public var selectionStyle: UITableViewCell.CellStyle = .default
     
     /// 当选项在选中状态下的文字颜色
-    public var selectedColor: UIColor?
+    public var selectedColor: UIColor = ELColor.primary
     
     /// 选项内容([String] | [[String: Any]])
     /// 当传入类型为[[String: Any]]时，contents取值，使用'keysOfValue'属性
@@ -65,26 +74,51 @@ public class ELTablePoper: ELPoper {
     /// 如果contents类型为[[String: Any]]，必须设置取值的key,
     /// 若不设置，将会默认为["label", "sublabel"]
     /// 第一个key为标题，第二个为子标题
-    public var keysOfValue: [String]?
-    
-    /// 表格中的容器视图
-    var tableView: UITableView!
+    public var keysOfValue: [String] = ["value", "subvalue"] {
+        willSet {
+            switch selectionStyle {
+            case .`default`:
+                assert(newValue.count > 0, "选择模板为'.default'时, 传入的元素个数必须大于0")
+            default:
+                assert(newValue.count > 1, "当选择模板不为'.default', 传入元素个数必须大于1")
+            }
+            shouldupdateContentView = true
+        }
+    }
     
     /// 选中项
     var selectedIndexes = [Int]()
     
+    /// 表格中的容器视图
+    lazy var tableView: UITableView = {
+        let tableView = UITableView()
+        tableView.showsVerticalScrollIndicator = false
+        tableView.dataSource = self
+        tableView.delegate = self
+        containerView.addSubview(tableView)
+        return tableView
+    }()
+    
     /// 加载视图
-    var loadingView: UIActivityIndicatorView = {
+    lazy var loadingView: UIActivityIndicatorView = {
         let active = UIActivityIndicatorView()
         active.hidesWhenStopped = true
+        containerView.addSubview(active)
         return active
     }()
     
-    public init(refrenceView: UIView, delegate: ELTablePoperProtocol?) {
-        super.init(refrenceView: refrenceView, delegate: delegate)
-        selectionStyle = .default
-        isMultipleSelection = false
-        showActivityIndicatorWhenNullContents = true
+    /// 是否更新内容视图
+    var shouldupdateContentView = true {
+        willSet {
+            if newValue {
+                shouldUpdateContainerView = newValue
+            }
+        }
+    }
+    
+    //MARK: - 初始化
+    public init(refrenceView: UIView, withDelegate delegate: ELTablePoperProtocol?) {
+        super.init(refrenceView: refrenceView, withDelegate: delegate)
         createTableView()
     }
     
@@ -95,10 +129,25 @@ public class ELTablePoper: ELPoper {
 
 public extension ELTablePoper {
     override func show() {
-        let size = suggestionSizes()
-        let rects = suggestionRects(with: size)
-        layoutViews(with: rects)
-        super.show()
+        
+        defer { super.show() }
+        
+        guard shouldupdateContentView else { return }
+        shouldupdateContentView = false
+        
+        /// 计算步骤:
+        ///     1.计算内容所需大小
+        ///     2.根据内容所需大小计算容器视图大小
+        ///     3.计算容器视图大小及位置，并且过程中会适配屏幕
+        ///     4.此时根据容器视图大小计算内容视图大小及位置
+        calculateContainerViewsSize(with: calculateContentViewsSize())
+        calculateContainerViewsRect()
+        calculateContentViewsRect()
+        
+        /// 是否显示加载动画
+        setLoadingView()
+        
+        setTheme()
     }
 }
 
@@ -109,111 +158,158 @@ extension ELTablePoper {
         tableView.showsVerticalScrollIndicator = false
         tableView.dataSource = self
         tableView.delegate = self
-        contentView.addSubview(tableView)
+        containerView.addSubview(tableView)
     }
     
-    /// 布局
-    func layoutViews(with rects: (CGRect, CGRect)) {
-        defer { updateTheme() }
-        
-        /// 隐藏所有子视图
-        _ = contentView.subviews.map({ $0.isHidden = true })
-        contentView.frame = rects.1
-        
-        /// 是否显示加载动画
+    /// 创建加载视图
+    func setLoadingView() {
         if contents == nil && showActivityIndicatorWhenNullContents {
+            tableView.isHidden = true
             loadingView.isHidden = false
-            loadingView.frame = rects.0
+            loadingView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+            loadingView.center = CGPoint(x: containerView.bounds.width / 2, y: containerView.bounds.height / 2)
             loadingView.startAnimating()
-            if loadingView.superview == nil {
-                contentView.addSubview(loadingView)
-            }
-            return
+        } else {
+            loadingView.stopAnimating()
+            loadingView.isHidden = true
+            tableView.isHidden = false
+            tableView.reloadData()
         }
-        
-        /// 显示选项表格
-        if tableView.superview == nil {
-            contentView.addSubview(tableView)
-        }
-        if #available(iOS 11.0, *) {
-            tableView.contentInsetAdjustmentBehavior = isFullScreen ? .always : .never
-        }
-        tableView.isHidden = false
-        tableView.frame = rects.0
-        tableView.reloadData()
     }
-    
+}
+
+//MARK: - Settings
+extension ELTablePoper {
     /// 更新主题
-    override func updateTheme() {
-        super.updateTheme()
-        if theme == .light {
-            if contents == nil && showActivityIndicatorWhenNullContents {
-                loadingView.style = .gray
-            }
+    override func setTheme() {
+        super.setTheme()
+        if containerTheme == .light {
+            loadingView.style = .gray
             tableView.backgroundColor = .white
             tableView.separatorStyle = .none
         } else {
-            if contents == nil && showActivityIndicatorWhenNullContents {
-                loadingView.style = .white
-            }
+            loadingView.style = .white
             tableView.backgroundColor = ELColor.rgb(54, 55, 56)
             tableView.separatorStyle = .singleLine
             tableView.separatorInset = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8)
             tableView.separatorColor = ELColor.withHex("333333")
         }
     }
-}
-
-extension ELTablePoper {
-    /// 计算contentView的大小
-    func suggestionSizes() -> (CGSize, CGSize) {
-        if isFullScreen || contentsFixedSize != nil {
-            return suggestionContentSize(of: CGSize.zero)
+    
+    /// 计算表格视图所需的大小
+    func calculateContentViewsSize() -> CGSize {
+        if isFullScreen {
+            return CGSize.zero
         }
         
-        /// with loading?
-        if  contents == nil && showActivityIndicatorWhenNullContents {
-            return suggestionContentSize(of: CGSize(width: 120, height: 120))
+        /// 内容为空时且showActivityIndicatorWhenNullContents = true，显示加载动画
+        if contents == nil && showActivityIndicatorWhenNullContents {
+            return CGSize(width: 120, height: 120)
         }
         
-        let cellHeight: CGFloat = selectionStyle! == .subtitle ? 50 : 35
+        /// 声明内容视图大小
+        var contentSize = CGSize.zero
         
-        /// typeof 'contents' is [String]
-        if let contents = contents as? [String] {
-            var maxWidth: CGFloat = 0
-            for content in contents {
-                let width = content.widthWithLimitHeight(cellHeight)
-                maxWidth = max(width, maxWidth)
+        /// 定义每个cell的高度
+        let cellHeight: CGFloat = selectionStyle == .subtitle ? 50 : 35
+        
+        /// 如果设置了固定宽度或高度
+        if let fixedSize = fixedSizeOfContainerView {
+            if fixedSize.width != 0 {
+                contentSize.width = fixedSize.width
             }
-            return suggestionContentSize(of: CGSize(width: maxWidth + 36, height: CGFloat(contents.count) * cellHeight))
+            if fixedSize.height != 0 {
+                contentSize.height = fixedSize.height
+            }
         }
         
-        /// typeof 'contents' is [[String: Any]]
-        if let contents = contents as? [[String: Any]] {
-            let keys = keysOfValue ?? ["value", "subvalue"]
-            assert(keys.count > 0, "The property of 'keysOfValue' that must contain 1 element.")
-            var maxWidth: CGFloat = 0
-            for content in contents {
-                var textWidth: CGFloat = 0
-                if let text = content[keys[0]] as? String {
-                    textWidth = text.widthWithLimitHeight(cellHeight)
+        /// 如果宽度为0，计算最长字符串
+        if contentSize.width == 0 {
+            /// 当传入的内容类型为[String]时, 计算最长字符串
+            if let contents = contents as? [String] {
+                for text in contents {
+                    let textWidth = text.width(withLimit: cellHeight)
+                    contentSize.width = max(textWidth, contentSize.width)
                 }
-                if keys.count > 1, selectionStyle != .default, let detailText = content[keys[1]] as? String {
-                    let detailTextWidth = detailText.widthWithLimitHeight(20, fontSize: 13)
-                    if selectionStyle == .subtitle {
-                        textWidth = max(textWidth, detailTextWidth)
-                    } else {
-                        textWidth += (detailTextWidth + 20)
+            }
+            
+            /// 当传入的内容类型为[[String: Any]]时，根据模板计算最长字符串
+            if let contents = contents as? [[String: Any]] {
+                switch selectionStyle {
+                case .`default`:
+                    for content in contents {
+                        if let text = content[keysOfValue[0]] as? String {
+                            let textWidth = text.width(withLimit: cellHeight)
+                            contentSize.width = max(textWidth + 8, contentSize.width) /// 恰好宽度会被截取，所以+8dp
+                        }
+                    }
+                default:
+                    for content in contents {
+                        var maxWidth: CGFloat = 0
+                        if let text = content[keysOfValue[0]] as? String {
+                            let textWidth = text.width(withLimit: cellHeight) + 8 /// 恰好宽度会被截取，所以+8dp
+                            maxWidth = textWidth
+                        }
+                        if selectionStyle != .default, let subtext = content[keysOfValue[1]] as? String {
+                            let subtextWidth = subtext.width(withLimit: cellHeight, fontSize: 13) + 8 /// 恰好宽度会被截取，所以+8dp
+                            if selectionStyle != .subtitle {
+                                maxWidth = max(maxWidth, subtextWidth)
+                            } else {
+                                maxWidth += (subtextWidth + 8) /// 8表示标题与子标题之间的间隔
+                            }
+                        }
+                        contentSize.width = max(contentSize.width, maxWidth)
                     }
                 }
-                maxWidth = max(maxWidth, textWidth)
+                contentSize.width = max(contentSize.width, 120)
             }
-            return suggestionContentSize(of: CGSize(width: maxWidth + 36, height: CGFloat(contents.count) * cellHeight))
-        } else {
-            assertionFailure("Unsupported type of contents, must be '[String]' or '[[String: Any]]'")
         }
         
-        return suggestionContentSize(of: CGSize.zero)
+        /// 如果高度为0，计算内容视图高度
+        if contentSize.height == 0 {
+            if let contents = contents {
+                contentSize.height = CGFloat(contents.count) * cellHeight
+            }
+        }
+        
+        return contentSize
+    }
+    
+    /// 计算内容视图真实位置及大小
+    func calculateContentViewsRect() {
+        tableView.frame = containerView.bounds
+        
+        /// 如果是全屏
+        if isFullScreen {
+            tableView.frame.origin.x = contentViewLayoutMargin
+            tableView.frame.origin.y = statusBarHeight + 40
+            tableView.frame.size.width -= contentViewLayoutMargin * 2
+            tableView.frame.size.height -= (statusBarHeight + 40 + contentViewLayoutMargin)
+            return
+        }
+        
+        /// 根据位置计算
+        switch location {
+        case .left, .right:
+            if location == .left {
+                tableView.frame.origin.x = contentViewLayoutMargin
+            } else {
+                tableView.frame.origin.x = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+            }
+            tableView.frame.origin.y = contentViewLayoutMargin
+            tableView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+            tableView.frame.size.height -= (contentViewLayoutMargin * 2)
+        default:
+            let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+            if containerView.frame.midY > refRect.midY {
+                tableView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+            } else {
+                tableView.frame.origin.y = contentViewLayoutMargin
+            }
+            tableView.frame.origin.x = contentViewLayoutMargin
+            tableView.frame.size.width -= (contentViewLayoutMargin * 2)
+            tableView.frame.size.height -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+        }
     }
 }
 
@@ -230,24 +326,21 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
             cell = ELTablePoperCell(style: selectionStyle, reuseIdentifier: "kELTablePoperSelectionCell")
         }
         
-        let isSelected = (delegate as? ELTablePoperProtocol)?.isSelected?(at: indexPath.row) ?? selectedIndexes.contains(indexPath.row)
-        var isDisabled = (delegate as? ELTablePoperProtocol)?.isDisabled?(at: indexPath.row) ?? false
+        /// 选中与禁用
+        var isSelected = selectedIndexes.contains(indexPath.row)
+        var isDisabled = false
+        if let delegate = delegate as? ELTablePoperProtocol {
+            unowned let weakSelf = self
+            isSelected = delegate.tablePoper?(weakSelf, setSelectedRowAt: indexPath.row) ?? isSelected
+            isDisabled = delegate.tablePoper?(weakSelf, setDisabledRowAt: indexPath.row) ?? false
+        }
         
         /// 赋值
-        if let contents = contents as? [String] {
-            cell?.setText(contents[indexPath.row], valuesKey: nil)
-        } else if let contents = contents as? [[String: Any]] {
-            let keys = keysOfValue ?? ["value", "subvalue"]
-            assert(keys.count > 0, "The property of 'keysOfValue' that must contain one element.")
-            cell?.setText(contents[indexPath.row], valuesKey: keys[0])
-            /// sublabel
-            if keys.count > 1 {
-                cell?.setDetailText(contents[indexPath.row], valuesKey: keys[1])
-            }
-            /// disabled
-            isDisabled = (contents[indexPath.row]["disabled"] as? Bool) ?? false
-        }
-        cell?.setTextColor(selectedColor, isSelected, theme, isDisabled)
+        cell?.isSelected = isSelected
+        cell?.isDisabled = isDisabled
+        cell?.selectedColor = selectedColor
+        cell?.setTexts(contents?[indexPath.row], keysOfValue: keysOfValue)
+        cell?.applySettings()
         
         return cell!
     }
@@ -259,82 +352,215 @@ extension ELTablePoper: UITableViewDataSource, UITableViewDelegate {
     
     /// 选择
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let contents = contents as? [[String: Any]] {
-            if let isDisabled = contents[indexPath.row]["disabled"] as? Bool, isDisabled {
-                return
-            }
-            
-            unowned let weakSelf = self
+        
+        /// Disabled
+        guard let cell = tableView.cellForRow(at: indexPath) as? ELTablePoperCell, cell.isDisabled == false else { return }
+        
+        /// 更新Cell
+        defer {
             if isMultipleSelection {
-                if let index = selectedIndexes.firstIndex(of: indexPath.row) {
-                    selectedIndexes.remove(at: index)
-                } else {
-                    selectedIndexes.append(indexPath.row)
-                }
-                (delegate as? ELTablePoperProtocol)?.onMultipleSelected?(weakSelf, at: selectedIndexes)
                 tableView.reloadRows(at: [indexPath], with: .none)
-                return
-            } else {
-                selectedIndexes.removeAll()
-                selectedIndexes.append(indexPath.row)
-                (delegate as? ELTablePoperProtocol)?.onSingleSelected?(weakSelf, at: indexPath.row)
             }
         }
-        dismiss()
+        
+        /// 多选/单选选项计算
+        if isMultipleSelection {
+            if let index = selectedIndexes.firstIndex(of: indexPath.row) {
+                selectedIndexes.remove(at: index)
+            } else {
+                selectedIndexes.append(indexPath.row)
+            }
+        } else {
+            selectedIndexes.removeAll()
+            selectedIndexes.append(indexPath.row)
+        }
+        
+        /// 获取对应值
+        var values = [String]()
+        for index in selectedIndexes {
+            if let value = contents?[index] as? String {
+                values.append(value)
+            } else if let keyValue = contents?[index] as? [String: Any], let value = keyValue[keysOfValue[0]] as? String {
+                values.append(value)
+            }
+        }
+        if let delegate = delegate as? ELTablePoperProtocol {
+            unowned let weakSelf = self
+            delegate.tablePoper?(weakSelf, didSelectedRowsAt: selectedIndexes, with: values)
+        }
+        
+        if !isMultipleSelection {
+            hide()
+        }
     }
 }
 
 //MARK: - Table cell
 class ELTablePoperCell: UITableViewCell {
     
+    /// 标题
+    var titleLabel: UILabel!
+    
+    /// 副标题
+    lazy var subtitleLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 13)
+        addSubview(label)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
+    }()
+    
+    /// 选中标志
+    lazy var checkoutFlag: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = ELIcon.get(.check)?.stroked(by: ELColor.primary)
+        imageView.contentMode = .scaleAspectFit
+        addSubview(imageView)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.isHidden = true
+        return imageView
+    }()
+    
+    /// 主题
+    var theme: ELPoper.ContainerTheme = .light
+    
+    /// cell类型
+    var style: CellStyle! {
+        willSet { shouldUpdateConstraints = newValue != style }
+    }
+    
+    /// 选中时的颜色
+    var selectedColor: UIColor?
+    
+    /// 禁用
+    var isDisabled: Bool = false
+    
+    /// 是否应该更新约束
+    var shouldUpdateConstraints = true
+    
     /// Initialize
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
+        self.style = style
         selectionStyle = .none
-        textLabel?.font = UIFont.systemFont(ofSize: 15)
-        detailTextLabel?.font = UIFont.systemFont(ofSize: 13)
+        
+        
+        titleLabel = UILabel()
+        titleLabel?.font = UIFont.systemFont(ofSize: 15)
+        contentView.addSubview(titleLabel!)
+        titleLabel?.translatesAutoresizingMaskIntoConstraints = false
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    /// Text label's text
-    func setText(_ value: Any, valuesKey: String?) {
-        if let value = value as? String {
-            textLabel?.text = value
-        }
+    /// 设置约束
+    func setConstraints() {
+        NSLayoutConstraint.deactivate(titleLabel.constraints)
+        NSLayoutConstraint.deactivate(subtitleLabel.constraints)
+        NSLayoutConstraint.deactivate(checkoutFlag.constraints)
         
-        if let value = value as? [String: Any], let key = valuesKey {
-            textLabel?.text = value[key] as? String
+        checkoutFlag.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
+        checkoutFlag.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        checkoutFlag.widthAnchor.constraint(equalToConstant: isSelected ? 20 : 0).isActive = true
+        checkoutFlag.heightAnchor.constraint(equalToConstant: 20).isActive = true
+        
+        switch style! {
+        case .`default`:
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+            titleLabel.trailingAnchor.constraint(equalTo: checkoutFlag.leadingAnchor).isActive = true
+            titleLabel.topAnchor.constraint(equalTo: topAnchor).isActive = true
+            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+            titleLabel.textAlignment = .left
+        case .subtitle:
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+            titleLabel.trailingAnchor.constraint(equalTo: checkoutFlag.leadingAnchor).isActive = true
+            titleLabel.topAnchor.constraint(equalTo: topAnchor).isActive = true
+            titleLabel.heightAnchor.constraint(equalToConstant: 35).isActive = true
+            titleLabel.textAlignment = .left
+            
+            subtitleLabel.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+            subtitleLabel.trailingAnchor.constraint(equalTo: checkoutFlag.leadingAnchor).isActive = true
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor).isActive = true
+            subtitleLabel.heightAnchor.constraint(equalToConstant: 20).isActive = true
+            subtitleLabel.textAlignment = .left
+        case .value1:
+            let textWidth = titleLabel.text?.width(withLimit: 35) ?? 0
+            
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+            titleLabel.topAnchor.constraint(equalTo: topAnchor).isActive = true
+            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+            titleLabel.widthAnchor.constraint(equalToConstant: textWidth + 10).isActive = true
+            titleLabel.textAlignment = .left
+            
+            subtitleLabel.topAnchor.constraint(equalTo: topAnchor).isActive = true
+            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor).isActive = true
+            subtitleLabel.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+            subtitleLabel.trailingAnchor.constraint(equalTo: checkoutFlag.leadingAnchor).isActive = true
+            subtitleLabel.textAlignment = .right
+        default:
+            let textWidth = titleLabel.text?.width(withLimit: 35) ?? 0
+            
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+            titleLabel.widthAnchor.constraint(equalToConstant: textWidth + 10).isActive = true
+            titleLabel.topAnchor.constraint(equalTo: topAnchor).isActive = true
+            titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+            titleLabel.textAlignment = .right
+            
+            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor).isActive = true
+            subtitleLabel.trailingAnchor.constraint(equalTo: checkoutFlag.leadingAnchor).isActive = true
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor).isActive = true
+            subtitleLabel.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+            subtitleLabel.textAlignment = .left
         }
     }
     
-    /// Detail text label's text
-    func setDetailText(_ value: Any, valuesKey: String) {
-        if let value = value as? [String: Any] {
-            detailTextLabel?.text = value[valuesKey] as? String
+    /// 设置值
+    func setTexts(_ info: Any?, keysOfValue keys: [String]) {
+        if let info = info as? String {
+            titleLabel.text = info
+        } else if let info = info as? [String: Any] {
+            titleLabel.text = info[keys[0]] as? String
+            
+            subtitleLabel.isHidden = keys.count <= 1
+            if style != .default, keys.count > 1 {
+                subtitleLabel.text = info[keys[1]] as? String
+            }
+            isDisabled = (info["disabled"] as? Bool) ?? false
         }
     }
     
-    /// Colors
-    func setTextColor(_ color: UIColor?, _ selected: Bool,_ theme: ELPoper.Theme,_ isDisabled: Bool) {
-        if selected {
-            textLabel?.textColor = color ?? ELColor.primary
-            detailTextLabel?.textColor = color ?? ELColor.primary
-            accessoryView = UIImageView(image: ELIcon.get(.check)?.stroked(by: color ?? ELColor.primary)?.scale(to: 20))
-            return
-        } else {
-            accessoryView = nil
-        }
+    /// 应用设置
+    func applySettings() {
+        /// 选中
+        checkoutFlag.isHidden = !isSelected
+        
+        /// 设置约束
+        setConstraints()
+        
+        /// 主题颜色
         if theme == .light {
             backgroundColor = UIColor.white
-            textLabel?.textColor = isDisabled ? ELColor.withHex("909399") : ELColor.withHex("303133")
-            detailTextLabel?.textColor = isDisabled ? ELColor.withHex("C0C4CC") : ELColor.withHex("606266")
+            if isDisabled {
+                titleLabel.textColor = ELColor.withHex("909399")
+                subtitleLabel.textColor = ELColor.withHex("C0C4CC")
+            } else {
+                titleLabel?.textColor = isSelected ? (selectedColor ?? ELColor.primary) : ELColor.withHex("303133")
+                subtitleLabel.textColor = isSelected ? (selectedColor ?? ELColor.primary) : ELColor.withHex("606266")
+                checkoutFlag.image = checkoutFlag.image?.stroked(by: selectedColor ?? ELColor.primary)
+            }
         } else {
             backgroundColor = ELColor.rgb(54, 55, 56)
-            textLabel?.textColor = isDisabled ? ELColor.withHex("606266") : UIColor.white
-            detailTextLabel?.textColor = isDisabled ? ELColor.withHex("606266") : ELColor.withHex("C0C4CC")
+            if isDisabled {
+                titleLabel.textColor = ELColor.withHex("606266")
+                subtitleLabel.textColor = ELColor.withHex("606266")
+            } else {
+                titleLabel?.textColor = isSelected ? (selectedColor ?? ELColor.primary) : .white
+                subtitleLabel.textColor = isSelected ? (selectedColor ?? ELColor.primary) : ELColor.withHex("C0C4CC")
+                checkoutFlag.image = checkoutFlag.image?.stroked(by: selectedColor ?? ELColor.white)
+            }
         }
     }
 }

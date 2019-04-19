@@ -24,24 +24,40 @@ import UIKit
 public class ELTextPoper: ELPoper {
     
     /// 弹出需要显示的字符
-    public var text: String? { didSet { createTextView() } }
+    public var text: String? {
+        willSet { shouldUpdateContentView = newValue != text }
+    }
     
     /// 字符颜色
-    public var textColor: UIColor! { didSet { createTextView() } }
+    public var textColor: UIColor! { willSet { setTextView() } }
     
     /// 字符字体
-    public var font: UIFont! { didSet { createTextView() } }
+    public var font: UIFont! {
+        willSet { shouldUpdateContentView = newValue.pointSize != font.pointSize }
+    }
     
     /// 文字视图
-    private var textView: UITextView?
+    private lazy var textView: UITextView = {
+        let textView = UITextView()
+        textView.isEditable = false
+        textView.showsVerticalScrollIndicator = false
+        textView.showsHorizontalScrollIndicator = false
+        textView.textContainerInset = UIEdgeInsets.zero
+        containerView.addSubview(textView)
+        return textView
+    }()
     
-    public override init(refrenceView: UIView, delegate: ELPoperProtocol?) {
-        super.init(refrenceView: refrenceView, delegate: delegate)
+    /// 是否需要更新内容
+    var shouldUpdateContentView = true {
+        willSet { shouldUpdateContainerView = newValue }
+    }
+    
+    public override init(refrenceView: UIView, withDelegate delegate: ELPoperProtocol?) {
+        super.init(refrenceView: refrenceView, withDelegate: delegate)
         
         /// Create text view
         textColor = ELColor.withHex("8A898C")
         font = UIFont.systemFont(ofSize: 15)
-        createTextView()
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -50,97 +66,76 @@ public class ELTextPoper: ELPoper {
 }
 
 public extension ELTextPoper {
-    /// 显示视图
+    /// 显示
     override func show() {
-        let sizes = suggestionSizes()
-        var rects = suggestionRects(with: sizes)
-        if isFullScreen, sizes.0.width < rects.0.width || sizes.0.height < rects.0.height {
-            rects.0.size.width = min(sizes.0.width, rects.0.width)
-            rects.0.size.height = min(sizes.0.height, rects.0.height)
-        }
-        layoutTextView(with: rects)
         
-        super.show()
+        defer { super.show() }
+        
+        /// 是否更新
+        guard shouldUpdateContentView else { return }
+        shouldUpdateContentView = false
+        
+        /// 计算步骤:
+        ///     1.计算内容所需大小
+        ///     2.根据内容所需大小计算容器视图大小
+        ///     3.计算容器视图大小及位置，并且过程中会适配屏幕
+        ///     4.此时根据容器视图大小计算内容视图大小及位置
+        calculateContainerViewsSize(with: calculateContentViewsSize(with: 150))
+        calculateContainerViewsRect()
+        calculateContentViewsRect()
+        setTextView()
     }
 }
 
 extension ELTextPoper {
     
     /// Create text view
-    func createTextView() {
-        if textView == nil {
-            textView = UITextView()
-            textView?.isEditable = false
-            textView?.showsVerticalScrollIndicator = false
-            textView?.showsHorizontalScrollIndicator = false
-            textView?.textContainerInset = UIEdgeInsets.zero
-        }
-        textView?.text = text
-        textView?.font = font
-        textView?.textColor = textColor
-        
-        /// 更新视图
-        if superview != nil {
-            show()
-        }
-    }
-    
-    /// 布局textView
-    func layoutTextView(with rects: (CGRect, CGRect)) {
-        _ = contentView.subviews.map({ $0.isHidden = !($0 is UITextView) })
-        
-        if  textView?.superview == nil {
-            contentView.addSubview(textView!)
-        }
-        
-        contentView.frame = rects.1
-        textView?.frame = rects.0
-        updateTheme()
-        
-        if isFullScreen {
-            if closeBtn.superview == nil {
-                contentView.addSubview(closeBtn)
-            }
-            closeBtn.isHidden = false
-            textView?.center = contentView.center
-        }
+    func setTextView() {
+        textView.text = text
+        textView.font = font
+        textView.textColor = textColor
     }
     
     /// 更新主题
-    override func updateTheme() {
-        if theme == .light {
-            textView?.backgroundColor = UIColor.white
+    override func setTheme() {
+        super.setTheme()
+        if containerTheme == .light {
+            textView.backgroundColor = UIColor.white
         } else {
-            textView?.backgroundColor = ELColor.rgb(54, 55, 56)
+            textView.backgroundColor = ELColor.rgb(54, 55, 56)
         }
-        super.updateTheme()
     }
 }
 
+//MARK: - Settings
 extension ELTextPoper {
     
-    /// 计算字符的宽高
-    func calculateTextSize(fixedWidth width: CGFloat) -> CGSize {
-        switch area {
-        case .left:
-            let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-            let maxWidth = refRect.minX - 10 - 26
-            if maxWidth > 0, let text = text {
-                let height = text.heightWithLimitWidth(maxWidth, fontSize: font.pointSize)
-                return CGSize(width: maxWidth, height: height)
-            }
-        case .right:
-            let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-            let maxWidth = UIScreen.main.bounds.width - 10 - 26 - refRect.maxX
-            if maxWidth > 0, let text = text {
-                let height = text.heightWithLimitWidth(maxWidth, fontSize: font.pointSize)
-                return CGSize(width: maxWidth, height: height)
+    /// 计算字符所需的宽度和高度
+    func calculateContentViewsSize(with width: CGFloat) -> CGSize {
+        if isFullScreen {
+            return CGSize.zero
+        }
+        
+        var limitWidth: CGFloat = width
+        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+        if location == .left {
+            limitWidth = refRect.minX - contentViewLayoutMargin * 2 - suggestionArrowsHeight - containerViewLayoutMargin
+        } else if location == .right {
+            limitWidth = screenWidth - containerViewLayoutMargin - contentViewLayoutMargin * 2 - suggestionArrowsHeight - refRect.maxX
+        }
+        
+        switch location {
+        case .left, .right:
+            if limitWidth > 0, let text = text {
+                let height = text.height(withLimit: limitWidth, fontSize: font.pointSize)
+                return CGSize(width: limitWidth, height: height)
             }
         default:
             if let text = text {
-                let height = text.heightWithLimitWidth(width, fontSize: font.pointSize)
+                let height = text.height(withLimit: limitWidth, fontSize: font.pointSize)
+                /// 当高度大于宽度时，重新计算
                 if height > width {
-                    return calculateTextSize(fixedWidth: width + font.pointSize * 4)
+                    return calculateContentViewsSize(with: limitWidth + font.pointSize * 4)
                 }
                 return CGSize(width: width, height: height)
             }
@@ -148,14 +143,61 @@ extension ELTextPoper {
         return CGSize.zero
     }
     
-    /// 计算视图的宽高
-    func suggestionSizes() -> (CGSize, CGSize) {
-        if isFullScreen || contentsFixedSize != nil {
-            let textViewSize = calculateTextSize(fixedWidth: UIScreen.main.bounds.width - 16)
-            return (textViewSize, suggestionContentSize(of: CGSize.zero).1)
+    /// 计算内容真实大小及位置
+    func calculateContentViewsRect() {
+        textView.frame = containerView.bounds
+        
+        /// 如果是全屏
+        if isFullScreen {
+            textView.frame.origin.x = contentViewLayoutMargin
+            textView.frame.origin.y = statusBarHeight + 40
+            textView.frame.size.width -= contentViewLayoutMargin * 2
+            textView.frame.size.height -= (statusBarHeight + 40 + contentViewLayoutMargin)
+            return
         }
         
-        let textViewSize = calculateTextSize(fixedWidth: font.pointSize * 12)
-        return suggestionContentSize(of: textViewSize)
+        /// 根据位置计算
+        switch location {
+        case .left, .right:
+            if location == .left {
+                textView.frame.origin.x = contentViewLayoutMargin
+            } else {
+                textView.frame.origin.x = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+            }
+            textView.frame.origin.y = contentViewLayoutMargin
+            textView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+            textView.frame.size.height -= (contentViewLayoutMargin * 2)
+        default:
+            if containerView.frame.minY > screenWidth / 2 {
+                textView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+            } else {
+                textView.frame.origin.y = contentViewLayoutMargin
+            }
+            textView.frame.origin.x = contentViewLayoutMargin
+            textView.frame.size.width -= (contentViewLayoutMargin * 2)
+            textView.frame.size.height -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+        }
+    }
+}
+
+extension String {
+    /// 快捷方式获取字符宽度
+    func width(withLimit height: CGFloat, fontSize: CGFloat = 15) -> CGFloat {
+        let limitSize = CGSize(width: CGFloat.infinity, height: height)
+        let font = UIFont.systemFont(ofSize: fontSize)
+        return (self as NSString).boundingRect(with: limitSize,
+                                               options: .usesLineFragmentOrigin,
+                                               attributes: [.font: font],
+                                               context: nil).width
+    }
+    
+    /// 快捷方式获取字符高度
+    func height(withLimit width: CGFloat, fontSize: CGFloat = 15) -> CGFloat {
+        let limitSize = CGSize(width: width, height: CGFloat.infinity)
+        let font = UIFont.systemFont(ofSize: fontSize)
+        return (self as NSString).boundingRect(with: limitSize,
+                                               options: .usesLineFragmentOrigin,
+                                               attributes: [.font: font],
+                                               context: nil).height
     }
 }

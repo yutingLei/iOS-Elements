@@ -27,26 +27,42 @@
 import UIKit
 
 @objc public protocol ELImagePoperProtocol: ELPoperProtocol {
+    /// 远程图片大小
     @objc optional func remoteImageSize(at index: Int) -> CGSize
 }
 
 public class ELImagePoper: ELPoper {
     
     /// 显示图片页数指示器(false)
-    public var showPageControl: Bool!
+    public var showPageControl: Bool = false {
+        didSet { setPageControl() }
+    }
     
-    /// 图片站位图
+    /// 图片占位图
     /// 若为nil，且展示远程图片时，自动创建加载指示器
     public var placeholderImage: UIImage?
     
     /// 本地图片集合
-    public var images: [UIImage]?
+    public var images: [UIImage]? {
+        willSet { shouldUpdateContentView = newValue.hashValue != images.hashValue }
+    }
     
     /// 远程图片集合, 传入地址即可
     /// 'isFullScreen = true'时，无需实现'ELImagePoperProtocol'中的代理方法'remoteImageSize(at:)'
     /// 'isFullScreen = false'时，需手动实现'ELImagePoperProtocol'中的代理方法'remoteImageSize(at:)'
-    public var remotePaths: [String]?
+    public var remotePaths: [String]? {
+        willSet { shouldUpdateContentView = newValue?.hashValue != remotePaths?.hashValue }
+    }
     lazy var remoteQueue: DispatchQueue = { return DispatchQueue(label: "com.remote.image.poper") }()
+    
+    /// 是否更新视图
+    var shouldUpdateContentView = true {
+        willSet {
+            if newValue {
+                shouldUpdateContainerView = newValue
+            }
+        }
+    }
     
     /// 滚动视图，视图所有图片视图的容器
     private lazy var scrollView: UIScrollView = {
@@ -55,6 +71,7 @@ public class ELImagePoper: ELPoper {
         scrollView.isPagingEnabled = true
         scrollView.showsVerticalScrollIndicator = false
         scrollView.showsHorizontalScrollIndicator = false
+        containerView.addSubview(scrollView)
         return scrollView
     }()
     
@@ -63,11 +80,12 @@ public class ELImagePoper: ELPoper {
         let pageControl = UILabel()
         pageControl.textAlignment = .center
         pageControl.font = UIFont.systemFont(ofSize: 15)
+        containerView.addSubview(pageControl)
         return pageControl
     }()
     
-    public init(refrenceView: UIView, delegate: ELImagePoperProtocol?) {
-        super.init(refrenceView: refrenceView, delegate: delegate)
+    public init(refrenceView: UIView, withDelegate delegate: ELImagePoperProtocol?) {
+        super.init(refrenceView: refrenceView, withDelegate: delegate)
         showPageControl = false
     }
     
@@ -79,84 +97,138 @@ public class ELImagePoper: ELPoper {
 public extension ELImagePoper {
     /// 展示视图
     override func show() {
-        let sizes = suggestionSizes()
-        let rects = suggestionRects(with: sizes)
-        layoutScrollViews(with: rects)
+        /// 显示
+        defer { super.show() }
         
-        super.show()
+        /// 需要更新
+        guard shouldUpdateContentView else { return }
+        shouldUpdateContentView = false
+        
+        /// 计算步骤:
+        ///     1.计算内容所需大小
+        ///     2.根据内容所需大小计算容器视图大小
+        ///     3.计算容器视图大小及位置，并且过程中会适配屏幕
+        ///     4.此时根据容器视图大小计算内容视图大小及位置
+        calculateContainerViewsSize(with: calculateContentViewsSize())
+        calculateContainerViewsRect()
+        calculateContentViewsRect()
+        
+        /// 创建图片
+        createImageViews()
+        
+        /// 设置主题
+        setTheme()
     }
 }
 
+//MARK: - Settings
 extension ELImagePoper {
     
-    /// 计算内容视图的大小及其子视图的大小
-    func suggestionSizes() -> (CGSize, CGSize) {
-        if isFullScreen || contentsFixedSize != nil {
-            return suggestionContentSize(of: CGSize.zero)
-        }
-        
-        var subviewSize = CGSize.zero
-        if let images = images {
-            for image in images {
-                if image.size.width > subviewSize.width && image.size.height >= subviewSize.height {
-                    subviewSize = image.size
-                }
+    /// 设置主题颜色
+    override func setTheme() {
+        super.setTheme()
+        if containerTheme == .light {
+            scrollView.backgroundColor = UIColor.white
+            if showPageControl {
+                pageControl.isHidden = false
+                pageControl.textColor = UIColor.black
+            }
+        } else {
+            scrollView.backgroundColor = UIColor.black
+            if showPageControl {
+                pageControl.isHidden = false
+                pageControl.textColor = .white
             }
         }
-        if let paths = remotePaths {
+    }
+    
+    /// 设置页面指示器
+    func setPageControl() {
+        pageControl.isHidden = !showPageControl
+        if showPageControl {
+            if pageControl.superview == nil {
+                pageControl.frame = CGRect(x: 0, y: scrollView.bounds.height - 45, width: scrollView.bounds.width, height: 20)
+            }
+        }
+    }
+    
+    /// 计算内容所需大小
+    func calculateContentViewsSize() -> CGSize {
+        if isFullScreen {
+            return CGSize.zero
+        }
+        
+        var contentSize = CGSize.zero
+        
+        /// 计算内容视图大小
+        if let images = images {
+            for image in images {
+                if image.size > contentSize {
+                    contentSize = image.size
+                }
+            }
+        } else if let paths = remotePaths {
             if let delegate = delegate as? ELImagePoperProtocol, delegate.responds(to: #selector(delegate.remoteImageSize(at:))) {
                 for i in 0..<paths.count {
-                    if let size = delegate.remoteImageSize?(at: i), size.width > subviewSize.width && size.height >= subviewSize.height {
-                        subviewSize = size
+                    if let size = delegate.remoteImageSize?(at: i), size > contentSize {
+                        contentSize = size
                     }
                 }
             } else {
                 assertionFailure("展示远程图片且'isFullScreen = false'，必须实现'remoteImageSize(at:)'方法")
             }
         }
-        
-        return suggestionContentSize(of: subviewSize)
+        return contentSize
     }
     
-    /// 计算contentView以及scrollView的位置大小
-    func layoutScrollViews(with rects: (CGRect, CGRect)) {
-        _ = contentView.subviews.map({ $0.isHidden = !($0 is UIScrollView) })
+    /// 计算内容真实大小及位置
+    func calculateContentViewsRect() {
+        scrollView.frame = containerView.bounds
         
-        if scrollView.superview == nil {
-            contentView.addSubview(scrollView)
-        }
-        
-        contentView.frame = rects.1
-        scrollView.frame = rects.0
-        createImageViews()
-        updateTheme()
-        
-        /// page control
-        if showPageControl {
-            if  pageControl.superview == nil {
-                contentView.addSubview(pageControl)
-            }
-            pageControl.isHidden = false
-            pageControl.frame = CGRect(x: 0, y: contentView.frame.height - 35, width: contentView.frame.width, height: 20)
-        }
-        
-        /// Close control
+        /// 如果是全屏
         if isFullScreen {
-            if closeBtn.superview == nil {
-                contentView.addSubview(closeBtn)
-                closeBtn.isHidden = false
+            scrollView.frame.origin.x = contentViewLayoutMargin
+            scrollView.frame.origin.y = statusBarHeight + 40
+            scrollView.frame.size.width -= contentViewLayoutMargin * 2
+            scrollView.frame.size.height -= (statusBarHeight + 40 + contentViewLayoutMargin)
+            return
+        }
+        
+        /// 根据位置计算
+        switch location {
+        case .left, .right:
+            if location == .left {
+                scrollView.frame.origin.x = contentViewLayoutMargin
+            } else {
+                scrollView.frame.origin.x = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
             }
+            scrollView.frame.origin.y = contentViewLayoutMargin
+            scrollView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+            scrollView.frame.size.height -= (contentViewLayoutMargin * 2)
+        default:
+            if containerView.frame.minY > screenWidth / 2 {
+                scrollView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+            } else {
+                scrollView.frame.origin.y = contentViewLayoutMargin
+            }
+            scrollView.frame.origin.x = contentViewLayoutMargin
+            scrollView.frame.size.width -= (contentViewLayoutMargin * 2)
+            scrollView.frame.size.height -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
         }
     }
     
     /// 创建图片视图
     func createImageViews() {
+        /// 移除旧图片视图
+        _ = scrollView.subviews.map({ ($0 is UIImageView) ? $0.removeFromSuperview() : nil })
+        
+        /// 创建新图片视图
         var x: CGFloat = 0
         let w = scrollView.bounds.width
         let h = scrollView.bounds.height
         if let images = images {
             for image in images {
-                let imageView = UIImageView(frame: CGRect.init(x: x, y: 0, width: w, height: h))
+                let imageView = UIImageView(frame: CGRect(x: x, y: 0, width: w, height: h))
                 imageView.contentMode = .center
                 imageView.image = image
                 scrollView.addSubview(imageView)
@@ -167,9 +239,9 @@ extension ELImagePoper {
                 pageControl.text = "\(Int(scrollView.contentOffset.x / scrollView.frame.width))/\(images.count)"
             }
         }
-        if let remotePaths = remotePaths {
+        else if let remotePaths = remotePaths {
             for path in remotePaths {
-                let imageView = UIImageView(frame: CGRect.init(x: x, y: 0, width: w, height: h))
+                let imageView = UIImageView(frame: CGRect(x: x, y: 0, width: w, height: h))
                 imageView.contentMode = .center
                 scrollView.addSubview(imageView)
                 
@@ -177,7 +249,7 @@ extension ELImagePoper {
                     imageView.image = placeholderImage
                 } else {
                     let activityIndicator = UIActivityIndicatorView.init(frame: imageView.bounds)
-                    activityIndicator.style = theme == .light ? .gray : .white
+                    activityIndicator.style = containerTheme == .light ? .gray : .white
                     activityIndicator.startAnimating()
                     imageView.addSubview(activityIndicator)
                 }
@@ -198,22 +270,6 @@ extension ELImagePoper {
             }
         }
     }
-    
-    /// 设置主题颜色
-    override func updateTheme() {
-        if theme == .light {
-            scrollView.backgroundColor = UIColor.white
-            if showPageControl {
-                pageControl.textColor = UIColor.black
-            }
-        } else {
-            scrollView.backgroundColor = UIColor.black
-            if showPageControl {
-                pageControl.textColor = .white
-            }
-        }
-        super.updateTheme()
-    }
 }
 
 extension ELImagePoper: UIScrollViewDelegate {
@@ -227,17 +283,17 @@ extension ELImagePoper: UIScrollViewDelegate {
             }
         }
     }
+}
+
+extension CGSize {
     
-//    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
-//        if isFullScreen {
-//            let index = Int(scrollView.contentOffset.x / scrollView.frame.width)
-//            if index >= 0 && index < scrollView.subviews.count {
-//                return scrollView.subviews[index]
-//            }
-//        }
-//        return nil
-//    }
-//
-//    public func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
-//    }
+    /// 对比两个CGSize的大小
+    static func >(lhs: CGSize, rhs: CGSize) -> Bool {
+        return (lhs.width > rhs.width) && (lhs.height > rhs.height)
+    }
+    
+    /// 两个CGSize是否相等
+    static func ==(lhs: CGSize, rhs: CGSize) -> Bool {
+        return (lhs.width == rhs.width) && (lhs.height == rhs.height)
+    }
 }
