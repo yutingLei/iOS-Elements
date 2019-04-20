@@ -95,7 +95,7 @@ public class ELTablePoper: ELPoper {
         tableView.showsVerticalScrollIndicator = false
         tableView.dataSource = self
         tableView.delegate = self
-        containerView.addSubview(tableView)
+        containerView.effectsView.addSubview(tableView)
         return tableView
     }()
     
@@ -103,7 +103,7 @@ public class ELTablePoper: ELPoper {
     lazy var loadingView: UIActivityIndicatorView = {
         let active = UIActivityIndicatorView()
         active.hidesWhenStopped = true
-        containerView.addSubview(active)
+        containerView.effectsView.addSubview(active)
         return active
     }()
     
@@ -119,7 +119,6 @@ public class ELTablePoper: ELPoper {
     //MARK: - 初始化
     public init(refrenceView: UIView, withDelegate delegate: ELTablePoperProtocol?) {
         super.init(refrenceView: refrenceView, withDelegate: delegate)
-        createTableView()
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -155,15 +154,7 @@ public extension ELTablePoper {
 }
 
 extension ELTablePoper {
-    /// 创建表格视图
-    func createTableView() {
-        tableView = UITableView()
-        tableView.showsVerticalScrollIndicator = false
-        tableView.dataSource = self
-        tableView.delegate = self
-        containerView.addSubview(tableView)
-    }
-    
+
     /// 创建加载视图
     func setLoadingView() {
         if contents == nil && showActivityIndicatorWhenNullContents {
@@ -547,7 +538,7 @@ class ELTablePoperCell: UITableViewCell {
         if theme == .light {
             backgroundColor = UIColor.white
             if isDisabled {
-                titleLabel.textColor = ELColor.withHex("909399")
+                titleLabel.textColor = ELColor.withHex("C0C4CC")
                 subtitleLabel.textColor = ELColor.withHex("C0C4CC")
             } else {
                 titleLabel?.textColor = isSelected ? (selectedColor ?? ELColor.primary) : ELColor.withHex("303133")

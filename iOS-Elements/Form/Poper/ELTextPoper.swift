@@ -43,7 +43,7 @@ public class ELTextPoper: ELPoper {
         textView.showsVerticalScrollIndicator = false
         textView.showsHorizontalScrollIndicator = false
         textView.textContainerInset = UIEdgeInsets.zero
-        containerView.addSubview(textView)
+        containerView.effectsView.addSubview(textView)
         return textView
     }()
     

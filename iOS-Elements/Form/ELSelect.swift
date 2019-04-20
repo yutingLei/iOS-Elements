@@ -61,10 +61,7 @@ public class ELSelect: UIView {
     var _onSelected: (([String]?) -> Void)?
     
     /// 弹出视图
-    lazy var tablePoper: ELTablePoper = {
-        let tablePoper = ELTablePoper(refrenceView: self, withDelegate: self)
-        return tablePoper
-    }()
+    public var tablePoper: ELTablePoper!
     
     //MARK: Initialize
     public init(frame: CGRect, onSelected: (([String]?) -> Void)?) {
@@ -80,6 +77,7 @@ public class ELSelect: UIView {
         alignItems = .spaceBetween
         isMultiple = false
         isDisabled = false
+        createTablePoper()
         createValuesLabel()
         createArrowButton()
     }
@@ -127,6 +125,12 @@ extension ELSelect {
 }
 
 extension ELSelect {
+    /// Create poper
+    func createTablePoper() {
+        tablePoper = ELTablePoper(refrenceView: self, withDelegate: self)
+        tablePoper.animationStyle = .unfold
+    }
+    
     /// Value's label
     func createValuesLabel() {
         valuesLabel = UILabel()
@@ -176,6 +180,23 @@ extension ELSelect {
             viewWithTag(10001)?.removeFromSuperview()
         }
     }
+    
+    /// Set arrow image
+    func setArrow(up: Bool) {
+        if up {
+            UIView.animate(withDuration: 0.15, delay: 0, options: .curveLinear, animations: {
+                self.arrowImage.transform = self.arrowImage.transform.rotated(by: -CGFloat.pi / 2)
+            }) {_ in
+                UIView.animate(withDuration: 0.15, delay: 0, options: .curveLinear, animations: {
+                    self.arrowImage.transform = self.arrowImage.transform.rotated(by: -CGFloat.pi / 2)
+                })
+            }
+        } else {
+            UIView.animate(withDuration: 0.3, delay: 0, options: .curveLinear, animations: {
+                self.arrowImage.transform = CGAffineTransform.identity
+            })
+        }
+    }
 }
 
 extension ELSelect: ELTablePoperProtocol {
@@ -183,5 +204,14 @@ extension ELSelect: ELTablePoperProtocol {
     public func tablePoper(_ poper: ELTablePoper, didSelectedRowsAt indexes: [Int], with values: [String]) {
         value = values.joined(separator: " / ")
         _onSelected?(values)
+    }
+    
+    /// On poper hidden
+    public func onShowingPoper(_ poper: ELPoper) {
+        setArrow(up: true)
+    }
+    
+    public func onHidingPoper(_ poper: ELPoper) {
+        setArrow(up: false)
     }
 }

@@ -71,7 +71,7 @@ public class ELImagePoper: ELPoper {
         scrollView.isPagingEnabled = true
         scrollView.showsVerticalScrollIndicator = false
         scrollView.showsHorizontalScrollIndicator = false
-        containerView.addSubview(scrollView)
+        containerView.effectsView.addSubview(scrollView)
         return scrollView
     }()
     
@@ -80,7 +80,7 @@ public class ELImagePoper: ELPoper {
         let pageControl = UILabel()
         pageControl.textAlignment = .center
         pageControl.font = UIFont.systemFont(ofSize: 15)
-        containerView.addSubview(pageControl)
+        containerView.effectsView.addSubview(pageControl)
         return pageControl
     }()
     

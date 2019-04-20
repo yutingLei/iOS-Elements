@@ -21,8 +21,14 @@ import UIKit
 /// 弹出视图代理
 @objc public protocol ELPoperProtocol: NSObjectProtocol {
     
+    /// 视图将要显示
+    @objc optional func onShowingPoper(_ poper: ELPoper)
+    
     /// 视图已弹出
     @objc optional func onShownPoper(_ poper: ELPoper)
+    
+    /// 视图将要隐藏
+    @objc optional func onHidingPoper(_ poper: ELPoper)
     
     /// 视图已隐藏
     @objc optional func onHiddenPoper(_ poper: ELPoper)
@@ -40,7 +46,7 @@ public extension ELPoper {
     /// 执行弹出动画样式
     enum AnimationStyle {
         case fade
-        case unfold // 暂未实现
+        case unfold
     }
     
     /// 内容容器视图主题
@@ -408,15 +414,15 @@ extension ELPoper {
             }, completion: completed)
         } else {
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-            var fromRect = containerView.frame
-            let toRect = containerView.frame
+            var fromRect = containerView.bounds
+            let toRect = containerView.bounds
             if containerView.frame.midY <= refRect.midY {
-                fromRect.origin.y = refRect.minY
+                fromRect.origin.y = fromRect.height
             }
             fromRect.size.height = 0
-            containerView.frame = fromRect
+            containerView.effectsView.frame = fromRect
             UIView.animate(withDuration: 0.35, animations: {[unowned self] in
-                self.containerView.frame = toRect
+                self.containerView.effectsView.frame = toRect
             }, completion: completed)
         }
     }
@@ -429,16 +435,15 @@ extension ELPoper {
             }, completion: completed)
         } else {
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-            let fromRect = containerView.frame
-            var toRect = containerView.frame
+            let fromRect = containerView.bounds
+            var toRect = containerView.bounds
             if containerView.frame.midY <= refRect.midY {
-                toRect.origin.y = refRect.minY
+                toRect.origin.y = fromRect.height
             }
             toRect.size.height = 0
-            containerView.frame = fromRect
+            containerView.effectsView.frame = fromRect
             UIView.animate(withDuration: 0.35, animations: {[unowned self] in
-                self.containerView.setNeedsLayout()
-                self.containerView.frame = toRect
+                self.containerView.effectsView.frame = toRect
             }, completion: completed)
         }
     }
@@ -471,10 +476,12 @@ public extension ELPoper {
             UIApplication.shared.keyWindow?.addSubview(self)
         }
         
+        unowned let weakSelf = self
         showsAnimate {[unowned self] _ in
-            unowned let weakSelf = self
             self.delegate?.onShownPoper?(weakSelf)
         }
+        
+        delegate?.onShowingPoper?(weakSelf)
     }
     
     /// Hide poper with given animation style
@@ -482,8 +489,10 @@ public extension ELPoper {
         if let keyWindow = UIApplication.shared.keyWindow {
             for view in keyWindow.subviews {
                 if view is ELPoper {
+                    unowned let weakSelf = self
+                    delegate?.onHidingPoper?(weakSelf)
+                    
                     hideAnimate {[unowned self] _ in
-                        unowned let weakSelf = self
                         view.removeFromSuperview()
                         self.delegate?.onHiddenPoper?(weakSelf)
                     }
@@ -555,15 +564,9 @@ class ELShadowView: UIView {
     
     /// Create a view that make shadow effectively
     func createEffectsView() {
-        effectsView = UIView()
+        effectsView = UIView(frame: bounds)
         effectsView.layer.masksToBounds = true
         effectsView.backgroundColor = .white
         addSubview(effectsView)
-        
-        effectsView.translatesAutoresizingMaskIntoConstraints = false
-        effectsView.topAnchor.constraint(equalTo: topAnchor).isActive = true
-        effectsView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
-        effectsView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
-        effectsView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
     }
 }
