@@ -130,7 +130,10 @@ public class ELTablePoper: ELPoper {
 public extension ELTablePoper {
     override func show() {
         
-        defer { super.show() }
+        defer {
+            tableView.reloadData()
+            super.show()
+        }
         
         guard shouldupdateContentView else { return }
         shouldupdateContentView = false

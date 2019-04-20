@@ -120,6 +120,7 @@ public class ELPoper: UIView {
     public init(refrenceView: UIView, withDelegate delegate: ELPoperProtocol?) {
         super.init(frame: UIScreen.main.bounds)
         self.refrenceView = refrenceView
+        self.delegate = delegate
         createContentView()
         setContrast()
         setTheme()
@@ -468,10 +469,11 @@ public extension ELPoper {
         
         if superview == nil {
             UIApplication.shared.keyWindow?.addSubview(self)
-            showsAnimate {[unowned self] _ in
-                unowned let weakSelf = self
-                self.delegate?.onShownPoper?(weakSelf)
-            }
+        }
+        
+        showsAnimate {[unowned self] _ in
+            unowned let weakSelf = self
+            self.delegate?.onShownPoper?(weakSelf)
         }
     }
     

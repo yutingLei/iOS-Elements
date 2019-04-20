@@ -63,7 +63,6 @@ public class ELSelect: UIView {
     /// 弹出视图
     lazy var tablePoper: ELTablePoper = {
         let tablePoper = ELTablePoper(refrenceView: self, withDelegate: self)
-        tablePoper.animationStyle = .unfold
         return tablePoper
     }()
     
@@ -181,41 +180,7 @@ extension ELSelect {
 
 extension ELSelect: ELTablePoperProtocol {
     /// Selected option
-    public func onSingleSelected(at index: Int) {
-        guard let content = contents?[index] else { return }
-        
-        if let strValue = content as? String {
-            value = strValue
-            _onSelected?([strValue])
-        }
-        
-        if let mapValue = content as? [String: Any] {
-            let keys = keysOfValue ?? ["value", "subvalue"]
-            value = mapValue[keys[0]] as? String
-            if let value = value {
-                _onSelected?([value])
-            }
-        }
-    }
-    
-    /// Selected options
-    public func onMultipleSelected(at indexes: [Int]) {
-        guard let contents = contents, indexes.count > 0 else { value = nil; return }
-        
-        var values = [String]()
-        for index in indexes {
-            if let content = contents[index] as? String {
-                values.append(content)
-                continue
-            }
-            
-            if let content = contents[index] as? [String: Any] {
-                let key = keysOfValue ?? ["value"]
-                if let value = content[key[0]] as? String {
-                    values.append(value)
-                }
-            }
-        }
+    public func tablePoper(_ poper: ELTablePoper, didSelectedRowsAt indexes: [Int], with values: [String]) {
         value = values.joined(separator: " / ")
         _onSelected?(values)
     }
