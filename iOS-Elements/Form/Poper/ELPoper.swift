@@ -212,7 +212,7 @@ extension ELPoper {
             bezierPath.addQuadCurve(to: lb.offset(dx: arrowHeight, dy: -5), controlPoint: lb.offset(dx: arrowHeight))
             bezierPath.addLine(to: lc.offset(dx: arrowHeight, dy: arrowHeight))
         default:
-            let x = refRect.minX - containerView.frame.minX + (isArrowCentered ? (refRect.width / 2) : min(refRect.width / 2, 50))
+            let x = refRect.minX - containerView.frame.minX + (isArrowCentered ? (refRect.width / 2) : min(containerView.frame.width / 2, 50))
             if containerView.frame.minY < refRect.minY {
                 bezierPath.move(to: CGPoint(x: x, y: containerView.bounds.maxY))
                 bezierPath.addLine(to: CGPoint(x: x + arrowHeight, y: containerView.bounds.maxY - arrowHeight))
@@ -409,6 +409,7 @@ extension ELPoper {
     func showsAnimate(_ completed: ((Bool) -> Void)?) {
         if animationStyle == .fade {
             alpha = 0.1
+            containerView.effectsView.frame = containerView.bounds
             UIView.animate(withDuration: 0.35, animations: {[unowned self] in
                 self.alpha = 1.0
             }, completion: completed)

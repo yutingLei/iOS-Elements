@@ -222,7 +222,7 @@ extension ELTablePoper {
             /// 当传入的内容类型为[String]时, 计算最长字符串
             if let contents = contents as? [String] {
                 for text in contents {
-                    let textWidth = text.width(withLimit: cellHeight)
+                    let textWidth = text.width(withLimit: cellHeight) + 8
                     contentSize.width = max(textWidth, contentSize.width)
                 }
             }
