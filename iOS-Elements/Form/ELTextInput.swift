@@ -203,7 +203,6 @@ extension ELTextInput {
         default:
             layer.cornerRadius = 0
             layer.borderWidth = 0
-            backgroundColor = ELColor.rgb(230, 230, 230)
         }
     }
     
@@ -424,6 +423,7 @@ extension ELTextInput {
     public override func editingRect(forBounds bounds: CGRect) -> CGRect {
         var textRect = bounds
         textRect.origin.x = (layer.cornerRadius == bounds.height / 2) ? 16 : 8
+        textRect.size.width -= textRect.origin.x
         
         if let leftView = leftView {
             textRect.origin.x = leftView.frame.maxX
