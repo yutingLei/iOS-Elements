@@ -39,7 +39,7 @@ public class ELImagePoper: ELPoper {
     }
     
     /// 是否支持缩放(false)
-    public var isZoomed = false {
+    public var isZoomedWhenFullScreened = false {
         willSet {
             scrollView.bouncesZoom = newValue
         }
@@ -301,6 +301,7 @@ extension ELImagePoper: UIScrollViewDelegate {
     
     /// 缩放图片
     public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        guard isFullScreen else { return nil }
         let index = Int(scrollView.contentOffset.x / bounds.width)
         if index >= 0 && index < scrollView.subviews.count {
             return scrollView.subviews[index]
