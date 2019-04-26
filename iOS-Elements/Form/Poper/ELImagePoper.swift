@@ -38,6 +38,20 @@ public class ELImagePoper: ELPoper {
         didSet { setPageControl() }
     }
     
+    /// 是否支持缩放(false)
+    public var isZoomed = false {
+        willSet {
+            scrollView.bouncesZoom = newValue
+        }
+    }
+    
+    /// 缩放级别
+    public var zoomScale: CGFloat? {
+        willSet {
+            scrollView.zoomScale = newValue ?? 1
+        }
+    }
+    
     /// 图片占位图
     /// 若为nil，且展示远程图片时，自动创建加载指示器
     public var placeholderImage: UIImage?
@@ -229,7 +243,7 @@ extension ELImagePoper {
         if let images = images {
             for image in images {
                 let imageView = UIImageView(frame: CGRect(x: x, y: 0, width: w, height: h))
-                imageView.contentMode = .center
+                imageView.contentMode = .scaleAspectFit
                 imageView.image = image
                 scrollView.addSubview(imageView)
                 x += w
@@ -242,7 +256,7 @@ extension ELImagePoper {
         else if let remotePaths = remotePaths {
             for path in remotePaths {
                 let imageView = UIImageView(frame: CGRect(x: x, y: 0, width: w, height: h))
-                imageView.contentMode = .center
+                imageView.contentMode = .scaleAspectFit
                 scrollView.addSubview(imageView)
                 
                 if let placeholderImage = placeholderImage {
@@ -273,6 +287,7 @@ extension ELImagePoper {
 }
 
 extension ELImagePoper: UIScrollViewDelegate {
+    /// 滑动图片结束后触发
     public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         if showPageControl {
             if let images = images {
@@ -282,6 +297,15 @@ extension ELImagePoper: UIScrollViewDelegate {
                 pageControl.text = "\(Int(scrollView.contentOffset.x / scrollView.frame.width) + 1)/\(paths.count)"
             }
         }
+    }
+    
+    /// 缩放图片
+    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        let index = Int(scrollView.contentOffset.x / bounds.width)
+        if index >= 0 && index < scrollView.subviews.count {
+            return scrollView.subviews[index]
+        }
+        return nil
     }
 }
 
