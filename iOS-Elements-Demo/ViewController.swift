@@ -140,7 +140,6 @@ class ViewController: UIViewController {
         
         /// Prepend
         let button1 = ELButton(frame: CGRect(x: 0, y: 0, width: 80, height: h))
-        button1.style = .primary
         button1.isRounded = false
         button1.setTitle("https://", for: .normal)
         let slots: [Any] = ["https://", ELIcon.get(.search)!, button1]
@@ -160,7 +159,6 @@ class ViewController: UIViewController {
         
         /// Append
         let button2 = ELButton(frame: CGRect(x: 0, y: 0, width: 80, height: 30))
-        button2.style = .primary
         button2.isPlained = true
         button2.isRounded = true
         button2.setTitle("获取验证码", for: .normal)

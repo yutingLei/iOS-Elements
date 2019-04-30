@@ -97,10 +97,10 @@ public class ELButton: UIControl {
         }
     }
     
-    /// 字符标签
+    /// 字符标签; 注意：需要调用setTitle函数才会创建
     private(set) public var titleLabel: UILabel?
     
-    /// 图片视图
+    /// 图片视图; 注意：需要调用setImage函数才会创建
     private(set) public var imageView: UIImageView?
     
     /// 管理主题

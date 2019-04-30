@@ -208,7 +208,6 @@ public extension ELTextInput {
     ///   - onTouched: 点击该视图时根据beforeTouch返回值确定是否触发此函数
     func prepend(_ content: Any, beforeTouch: ELTextInputTouchBefore? = nil, onTouched: ELTextInputTouched? = nil) {
         if let slotView = createSlotView(with: content) {
-            slotView.setTitleColor(ELColor.secondaryText, for: .normal)
             field.leftView = slotView
             field.leftViewMode = .always
             if beforeTouch != nil || onTouched != nil {
@@ -222,7 +221,7 @@ public extension ELTextInput {
     }
     
     /// 创建内容
-    private func createSlotView(with content: Any) -> UIButton? {
+    private func createSlotView(with content: Any) -> UIControl? {
         var slotView: UIButton?
         
         let height = field.frame.height
@@ -235,9 +234,10 @@ public extension ELTextInput {
                                                             attributes: [.font: textFont],
                                                             context: nil).width
             
-            slotView = UIButton.init(frame: CGRect(x: 0, y: 0, width: textWidth + 16, height: height))
+            slotView = UIButton(frame: CGRect(x: 0, y: 0, width: textWidth + 16, height: height))
             slotView?.setTitle(text, for: .normal)
             slotView?.titleLabel?.font = textFont
+            slotView?.setTitleColor(ELColor.secondaryText, for: .normal)
             return slotView
         }
         
@@ -250,8 +250,8 @@ public extension ELTextInput {
         }
         
         /// 一个自定义按钮
-        if let button = content as? UIButton {
-            return button
+        if (content as AnyObject).isKind(of: UIControl.self) {
+            return content as? UIControl
         }
         
         /// 一个自定义视图
