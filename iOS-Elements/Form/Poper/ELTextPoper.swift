@@ -49,7 +49,11 @@ public class ELTextPoper: ELPoper {
     
     /// 是否需要更新内容
     var shouldUpdateContentView = true {
-        willSet { shouldUpdateContainerView = newValue }
+        willSet {
+            if newValue {
+                shouldUpdateContainerView = true
+            }
+        }
     }
     
     public override init(refrenceView: UIView, withDelegate delegate: ELPoperProtocol?) {
@@ -168,7 +172,8 @@ extension ELTextPoper {
             textView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
             textView.frame.size.height -= (contentViewLayoutMargin * 2)
         default:
-            if containerView.frame.minY > screenWidth / 2 {
+            let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+            if containerView.frame.midY > refRect.midY {
                 textView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
             } else {
                 textView.frame.origin.y = contentViewLayoutMargin

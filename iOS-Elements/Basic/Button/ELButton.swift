@@ -293,6 +293,44 @@ public extension ELButton {
         themes[state.rawValue] = theme
         setColor(for: self.state)
     }
+    
+    /// 开始倒计时
+    /// Note: 开启倒计时后，按钮将会自动禁用；计时结束后，按钮禁用解除
+    ///
+    /// - Parameters:
+    ///   - seconds: 计时时间，单位秒
+    ///   - formatter: 显示时间格式, 例如: "/@/秒", 其中"/@/"将会由倒计时间代替
+    func startCountingDown(_ seconds: Int,
+                           formatter: String = "/@/秒") {
+        /// 保存原来的标题
+        let originTitle = titleLabel?.text
+        
+        /// 禁用按钮
+        isEnabled = false
+        
+        /// 配置定时器
+        var count = seconds
+        let timerSource = DispatchSource.makeTimerSource()
+        timerSource.schedule(wallDeadline: .now(), repeating: .seconds(1), leeway: .seconds(0))
+        timerSource.setEventHandler {[unowned self] in
+            if count <= 0 {
+                timerSource.cancel()
+                DispatchQueue.main.async {
+                    self.isEnabled = true
+                    self.setTitle(originTitle, for: .normal)
+                }
+            } else {
+                let title = formatter.replacingOccurrences(of: "/@/", with: "\(count)")
+                DispatchQueue.main.async {
+                    self.setTitle(title, for: .normal)
+                }
+            }
+            count -= 1
+        }
+        
+        /// 启动定时器
+        timerSource.resume()
+    }
 }
 
 //MARK: - Override

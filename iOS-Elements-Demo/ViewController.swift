@@ -170,7 +170,10 @@ class ViewController: UIViewController {
         y += 35
         for slot in slots2 {
             let input = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
-            input.append(slot, beforeTouch: nil) {slotView in
+            input.append(slot, beforeTouch: { () -> Bool in
+                return true
+            }) {slotView in
+                (slotView as? ELButton)?.startCountingDown(60)
                 print("你点击了\(slotView)")
             }
             scrollView.addSubview(input)
