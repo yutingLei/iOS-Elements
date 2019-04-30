@@ -8,120 +8,140 @@
 
 import UIKit
 
-public class ELButtonTheme: Decodable {
+public class ELButtonTheme {
     
-    /// 保留颜色
-    private var reservedColor: ELColor?
+    /// 按钮状态
+    private(set) public var state: UIControl.State!
+    
+    /// 样式
+    private(set) public var style: ELButton.Style!
     
     /// 文字颜色
-    public var textColor: UIColor?
+    public var textColor: UIColor!
     
-    /// 文字高亮颜色
-    public var highlightTextColor: UIColor?
-    
-    /// icon颜色
-    public var iconColor: UIColor?
-    
-    /// icon高亮颜色
-    public var highlightIconColor: UIColor?
+    /// 背景颜色
+    public var backgroundColor: UIColor!
     
     /// 边框颜色
     public var borderColor: UIColor?
     
-    /// 边框高亮颜色
-    public var highlightBorderColor: UIColor?
+    /// 图片颜色
+    public var imageColor: UIColor?
     
-    /// 背景颜色
-    public var backgroundColor: UIColor?
+    /// 保留颜色，用于朴素转换
+    private var reservedColor: ELColor?
     
-    /// 背景高亮颜色
-    public var highlightBackgroundColor: UIColor?
-    
-    public required init(from decoder: Decoder) throws {}
-    
-    public init() {}
-    
-    /// 声明初始化
-    class func from(style: ELButton.Style) -> ELButtonTheme? {
-        let theme = ELButtonTheme()
+    /// 初始化主题
+    ///
+    /// - Parameters:
+    ///   - style: 样式
+    ///   - state: 按钮状态
+    public init(style: ELButton.Style, forState state: UIControl.State) {
+        self.state = state
+        self.style = style
         switch style {
         case .normal:
-            theme.reservedColor = ELColor.primary
-            theme.textColor = ELColor.withHex("303133")
-            theme.highlightTextColor = ELColor.primary
-            theme.iconColor = ELColor.withHex("303133")
-            theme.highlightIconColor = ELColor.primary
-            theme.borderColor = ELColor.rgb(96, 98, 102).withAlphaComponent(0.8)
-            theme.highlightBorderColor = ELColor.primary
-            theme.backgroundColor = .white
-            theme.highlightBackgroundColor = ELColor.primary.withAlphaComponent(0.2)
-            return theme
-        case .text:
-            theme.textColor = ELColor.primary
-            theme.highlightTextColor = ELColor.primary.offset(delta: 0.1)
-            return theme
+            textColor = state == .normal ? ELColor.textColor : ELColor.primary
+            backgroundColor = state == .normal ? UIColor.white : ELColor.primary.withAlphaComponent(0.2)
+            borderColor = state == .normal ? ELColor.firstLevelBorderColor : ELColor.primary.withAlphaComponent(0.8)
+            imageColor = state == .normal ? ELColor.textColor : ELColor.primary
+            return
+        case .text, .custom:
+            textColor = state == .normal ? ELColor.textColor : ELColor.primary
+            backgroundColor = UIColor.white
+            imageColor = state == .normal ? ELColor.textColor : ELColor.primary
+            return
+        case .primary:
+            reservedColor = ELColor.primary
+            backgroundColor = state == .normal ? ELColor.primary : ELColor.primary.offset(delta: 0.2)
         case .success:
-            theme.reservedColor = ELColor.success
+            reservedColor = ELColor.success
+            backgroundColor = state == .normal ? ELColor.success : ELColor.success.offset(delta: 0.2)
         case .info:
-            theme.reservedColor = ELColor.info
+            reservedColor = ELColor.info
+            backgroundColor = state == .normal ? ELColor.info : ELColor.info.offset(delta: 0.2)
         case .warning:
-            theme.reservedColor = ELColor.warning
+            reservedColor = ELColor.warning
+            backgroundColor = state == .normal ? ELColor.warning : ELColor.warning.offset(delta: 0.2)
         case .danger:
-            theme.reservedColor = ELColor.danger
-        case .custom(let themeObj):
-            if let data = themeObj as? Data {
-                return try? JSONDecoder().decode(ELButtonTheme.self, from: data)
-            } else if let string = themeObj as? String, let data = string.data(using: .utf8) {
-                return try? JSONDecoder().decode(ELButtonTheme.self, from: data)
-            } else if let dictionary = themeObj as? [String: Any],
-                let data = try? JSONSerialization.data(withJSONObject: dictionary, options: .prettyPrinted)
-            {
-                return try? JSONDecoder().decode(ELButtonTheme.self, from: data)
+            reservedColor = ELColor.danger
+            backgroundColor = state == .normal ? ELColor.danger : ELColor.danger.offset(delta: 0.2)
+        }
+        textColor = .white
+        imageColor = .white
+    }
+    
+    /// 能否朴素化
+    public class func canPlained(with style: ELButton.Style?) -> Bool {
+        if style == nil || style == .text || style == .custom {
+            return false
+        }
+        return true
+    }
+    
+    /// 朴素化
+    public func plained() {
+        guard ELButtonTheme.canPlained(with: style) else { return }
+        
+        if state == .normal {
+            if let style = style {
+                switch style {
+                case .primary, .success, .info, .warning, .danger:
+                    textColor = reservedColor
+                    backgroundColor = reservedColor!.withAlphaComponent(0.2)
+                    borderColor = reservedColor!.withAlphaComponent(0.8)
+                    imageColor = reservedColor
+                default: return
+                }
             }
-        default:
-            theme.reservedColor = ELColor.primary
         }
         
-        theme.textColor = .white
-        theme.highlightTextColor = .white
-        theme.backgroundColor = theme.reservedColor
-        theme.highlightBackgroundColor = theme.reservedColor?.offset(delta: 0.1)
-        theme.iconColor = .white
-        theme.highlightIconColor = .white
-        return theme
-    }
-}
-
-extension ELButtonTheme {
-    /// 朴素化
-    func plained() {
-        if textColor == ELColor.withHex("303133") {
-            highlightBackgroundColor = .white
-        } else {
-            textColor = reservedColor
-            highlightTextColor = .white
-            backgroundColor = reservedColor?.withAlphaComponent(0.2)
-            highlightBackgroundColor = reservedColor
-            borderColor = reservedColor?.withAlphaComponent(0.8)
-            highlightBorderColor = reservedColor
-            iconColor = reservedColor
-            highlightIconColor = .white
+        else if state == .highlighted || state == .selected {
+            if let style = style {
+                switch style {
+                case .normal:
+                    backgroundColor = UIColor.white
+                case .primary, .success, .info, .warning, .danger:
+                    textColor = .white
+                    backgroundColor = reservedColor
+                    borderColor = reservedColor
+                    imageColor = .white
+                default: return
+                }
+            }
         }
     }
     
-    /// 反朴素化
-    func revertPlain() {
-        if textColor == ELColor.withHex("303133") {
-            highlightBackgroundColor = reservedColor?.withAlphaComponent(0.2)
-        } else {
-            textColor = .white
-            highlightTextColor = .white
-            backgroundColor = reservedColor
-            highlightBackgroundColor = reservedColor?.offset(delta: 0.1)
-            borderColor = nil
-            highlightBorderColor = nil
-            iconColor = .white
-            highlightIconColor = .white
+    /// 逆朴素化
+    public func revertPlained() {
+        guard ELButtonTheme.canPlained(with: style) else { return }
+        
+        if state == .normal {
+            if let style = style {
+                switch style {
+                case .primary, .success, .info, .warning, .danger:
+                    textColor = .white
+                    backgroundColor = reservedColor
+                    borderColor = nil
+                    imageColor = .white
+                default: return
+                }
+            }
+        }
+            
+        else if state == .highlighted || state == .selected {
+            if let style = style {
+                switch style {
+                case .normal:
+                    backgroundColor = ELColor.primary.withAlphaComponent(0.2)
+                case .primary, .success, .info, .warning, .danger:
+                    textColor = .white
+                    backgroundColor = reservedColor!.offset(delta: 0.2)
+                    borderColor = nil
+                    imageColor = .white
+                default: return
+                }
+            }
         }
     }
 }

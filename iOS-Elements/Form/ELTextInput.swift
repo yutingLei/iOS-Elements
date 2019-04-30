@@ -17,438 +17,481 @@
 import UIKit
 
 public extension ELTextInput {
-    /// Type of contents for slot view
-    enum SlotType {
-        case text(String)
-        case icon(ELIcon.Name)
-        case image(UIImage)
-        case countDown(String, Int, String?)
-    }
+    /// 搜索建议取值所需的key值
+    typealias ELTextInputResultsOfKeys = (([String]) -> Void)
     
-    typealias ResultOfKeys = (([String]?) -> Void)
-    typealias Callback = (([Any]?) -> Void)
-    typealias FetchSync = ((_ query: String?,_ keys: ResultOfKeys?, _ callback: Callback) -> Void)
-    typealias FetchAsync = ((_ query: String?, _ keys: ResultOfKeys?, _ callback: @escaping Callback) -> Void)
+    /// 搜索建议异步回调
+    typealias ELTextInputFetchCallback = (([Any]?) -> Void)
+    
+    /// 定义同步搜索回调
+    typealias ELTextInputFetchSync = ((_ queryString: String?, _ resultOfKeys: ELTextInputResultsOfKeys?) -> [Any]?)
+    
+    /// 定义异步搜索回调
+    typealias ELTextInputFetchAsync = ((_ queryString: String?, _ resultOfKeys: ELTextInputResultsOfKeys?, _ callback: @escaping ELTextInputFetchCallback) -> Void)
+    
+    /// 边框样式
+    enum BorderStyle {
+        case none
+        case line
+        case rounded
+        case roundedTiny
+        case bottomLine
+    }
 }
 
-public class ELTextInput: UITextField {
-
-    /// 边框样式
-    public override var borderStyle: UITextField.BorderStyle {
-        get { return super.borderStyle }
+public class ELTextInput: UIView {
+    
+    /// 边距(默认: top: 0, left: 8, bottom: 0, right: 8)
+    public var margins: UIEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8) {
+        didSet {
+            layoutIfNeeded()
+        }
+    }
+    
+    /// 边框样式(默认: .roundedTiny)
+    public var borderStyle: BorderStyle = .roundedTiny {
+        willSet {
+            setBorderStyle(with: newValue)
+        }
+    }
+    
+    /// 边框颜色(默认: 边框样式所展示的颜色)
+    public var borderColor: UIColor? {
+        get { return layer.borderColor == nil ? nil : UIColor(cgColor: layer.borderColor!) }
         set {
-            super.borderStyle = .none
-            updateBorderStyle(with: newValue)
+            setBorderColor(with: newValue)
         }
     }
     
-    /// 编辑时边框颜色(ELColor.primary)
-    public var borderColorWhileEditing: UIColor! { willSet { if isEditing { layer.borderColor = newValue.cgColor } } }
-    
-    /// 未编辑时边框颜色(RGB: 210, 210, 210)
-    public var borderColorEndEditing: UIColor! { willSet { if !isEditing { layer.borderColor = newValue.cgColor } } }
-    
-    /// 使能
-    public override var isEnabled: Bool {
-        willSet { createMaskView(if: newValue) }
-    }
-    
-    /// 允许输入字符最大长度
-    public var maxLength: Int?
-    
-    /// 允许输入字符最小长度
-    public var minLength: Int?
-    
-    /// 表单验证是否成功(true)
-    public var isValidated: Bool {
-        get {
-            guard shouldValidateWhileEditing else { return true }
-            let len = text?.count ?? 0
-            if let min = minLength, len < min {
-                return false
-            }
-            if let max = maxLength, len > max {
-                return false
-            }
-            return true
+    /// 使能(默认: true)
+    public var isEnabled: Bool {
+        get { return super.isUserInteractionEnabled }
+        set {
+            setEnabled(with: newValue)
         }
     }
     
-    /// 输入时是否触发表单验证(true)
-    public var shouldValidateWhileEditing: Bool = true
+    /// 输入领域对象
+    private(set) public var field: UITextField!
     
-    /// 在验证表单错误时的边框颜色(ELColor.danger)
-    public var borderColorWhenErrorOccurred: UIColor!
-    
-    /// 本地搜索建议
-    public var fetchSuggestions: FetchSync?
-    
-    /// 远程(服务器)搜索建议
-    public var fetchSuggestionsAsync: FetchAsync?
-    
-    /// 输入结束后多少时间触发搜索(单位：毫秒)
-    /// 类似'debounce'函数，搜索建议比较频繁的触发时，设置该属性表示在输入
-    /// 结束后一定时间触发一次。
-    public var debounceTimeForFetchingSuggestions: TimeInterval?
-    
-    /// 弹出视图
-    public var tablePoper: ELTablePoper? {
-        get {
-            if fetchSuggestions == nil && fetchSuggestionsAsync == nil {
-                return nil
-            }
-            let poper = ELTablePoper(refrenceView: self, withDelegate: self)
-            return poper
+    /// 占位符位于编辑框上方(默认: false),当isAnimatedWhenFocused = true时，在中间
+    /// 聚焦时, 执行位置变更动画到顶部
+    public var isPlacedPlaceholderAtTop = false {
+        didSet {
+            setLocationOfPlacehoder()
         }
     }
     
-    /// 左插槽类型
-    var leftSlotType: SlotType?
+    /// 在输入框聚焦过程中，是否执行占位符转移动画, 这个需配合isPlacedPlaceholderAtTop = true使用
+    public var isAnimatedWhenFocused = false {
+        didSet {
+            setLocationOfPlacehoder()
+        }
+    }
     
-    /// 右插槽类型
-    var rightSlotType: SlotType?
+    /// 输入框默认值或当前输入的字符
+    public var text: String? {
+        get { return field.text }
+        set {
+            field.text = newValue
+        }
+    }
     
-    /// 保存回调函数
-    var savedCallbacks: [AnyHashable: Any]?
+    /// 占位符
+    public var placeholder: String? {
+        get { return field.placeholder ?? _placeholderLabel.text }
+        set {
+            setPlaceholder(with: newValue)
+        }
+    }
     
-    /// 搜索建议触发定时器及时间记录
-    var debounceTimer: Timer?
-    var timeInterval: TimeInterval?
+    /// 同步输入建议
+    public var syncFetchSuggestions: ELTextInputFetchSync?
     
-    /// 倒计时定时器
-    lazy var countDownTimer: DispatchSourceTimer = {
-        let timer = DispatchSource.makeTimerSource()
-        return timer
+    /// 异步(远程)输入建议
+    public var asyncFetchSuggestions: ELTextInputFetchAsync?
+    
+    /// 输入建议调用间隔时间
+    public var fetchDebounceTimeInterval: TimeInterval?
+    private var _timeInterval: TimeInterval?
+    
+    /// 输入建议展示视图
+    private lazy var _suggestionsTable: ELTablePoper = {
+        let poper = ELTablePoper(refrenceView: field, withDelegate: self)
+        poper.isContrasted = false
+        return poper
     }()
     
-    //MARK: - Initialize
+    /// 定时器
+    private var _debounceTimer: Timer?
+    
+    
+    //MARK: - Privates & Init
+    /// 占位符标签
+    private lazy var _placeholderLabel: UILabel = {
+        let label = UILabel()
+        label.textColor = ELColor.placeholderText
+        label.font = field.font
+        addSubview(label)
+        return label
+    }()
+
+    /// 左右视图回调
+    private var _callbacks: [Int: (ELTextInputTouchBefore?, ELTextInputTouched?)]?
+    
+    /// Init
     public override init(frame: CGRect) {
         super.init(frame: frame)
-        borderStyle = .line
-        borderColorWhileEditing = ELColor.primary
-        borderColorEndEditing = ELColor.rgb(210, 210, 210)
-        borderColorWhenErrorOccurred = ELColor.danger
-        layer.borderColor = borderColorEndEditing.cgColor
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(onTextInputBeganEdit),
-                                               name: UITextField.textDidBeginEditingNotification,
-                                               object: self)
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(onTextInputEndedEdit),
-                                               name: UITextField.textDidEndEditingNotification,
-                                               object: self)
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(onTextInputChanged),
-                                               name: UITextField.textDidChangeNotification,
-                                               object: self)
+        /// 设置参数
+        setBorderStyle(with: borderStyle)
+        
+        let x = margins.left
+        let y = margins.top
+        let w = bounds.width - margins.right - x
+        let h = bounds.height - margins.bottom - y
+        
+        /// 创建输入框
+        field = UITextField(frame: CGRect(x: x, y: y, width: w, height: h))
+        field.font = UIFont.systemFont(ofSize: 16)
+        field.textColor = ELColor.primaryText
+        addSubview(field)
+        
+        /// 添加观察者
+        addNotificationCenterObserver()
     }
     
+    /// Init error
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
+    /// Deinit
     deinit {
-        leftSlotType = nil
-        rightSlotType = nil
-        savedCallbacks = nil
-        debounceTimer?.invalidate()
-        debounceTimer = nil
+        _debounceTimer?.invalidate()
+        _debounceTimer = nil
+        removeNotificationCenterObserver()
+    }
+}
+
+//MARK: - Append & Prepend contents
+public extension ELTextInput {
+    
+    typealias ELTextInputTouchBefore = (() -> Bool)
+    typealias ELTextInputTouched = ((UIView) -> Void)
+    
+    /// 在输入框右侧添加内容
+    ///
+    /// - Parameters:
+    ///   - content: 被添加的内容，可以是一段字符/一张图片/一个自定义视图
+    ///   - beforeTouch: 在点击按钮begin触发，如果返回false, 将不会触发onTouched；如果设置为nil，则直接触发onTouched
+    ///   - onTouched: 点击该视图时根据beforeTouch返回值确定是否触发此函数
+    func append(_ content: Any, beforeTouch: ELTextInputTouchBefore? = nil, onTouched: ELTextInputTouched? = nil) {
+        if let slotView = createSlotView(with: content) {
+            field.rightView = slotView
+            field.rightViewMode = .always
+            if beforeTouch != nil || onTouched != nil {
+                slotView.addTarget(self, action: #selector(onSlotViewTouched), for: .touchUpInside)
+                if _callbacks == nil {
+                    _callbacks = [Int: (ELTextInputTouchBefore?, ELTextInputTouched?)]()
+                }
+                _callbacks?[slotView.hash] = (beforeTouch, onTouched)
+            }
+        }
+    }
+    
+    /// 在输入框左侧添加内容
+    ///
+    /// - Parameters:
+    ///   - content: 被添加的内容，可以是一段字符/一张图片/一个自定义视图
+    ///   - beforeTouch: 在点击按钮begin触发，如果返回false, 将不会触发onTouched；如果设置为nil，则直接触发onTouched
+    ///   - onTouched: 点击该视图时根据beforeTouch返回值确定是否触发此函数
+    func prepend(_ content: Any, beforeTouch: ELTextInputTouchBefore? = nil, onTouched: ELTextInputTouched? = nil) {
+        if let slotView = createSlotView(with: content) {
+            slotView.setTitleColor(ELColor.secondaryText, for: .normal)
+            field.leftView = slotView
+            field.leftViewMode = .always
+            if beforeTouch != nil || onTouched != nil {
+                slotView.addTarget(self, action: #selector(onSlotViewTouched), for: .touchUpInside)
+                if _callbacks == nil {
+                    _callbacks = [Int: (ELTextInputTouchBefore?, ELTextInputTouched?)]()
+                }
+                _callbacks?[slotView.hash] = (beforeTouch, onTouched)
+            }
+        }
+    }
+    
+    /// 创建内容
+    private func createSlotView(with content: Any) -> UIButton? {
+        var slotView: UIButton?
+        
+        let height = field.frame.height
+        
+        /// 一段字符
+        if let text = content as? String {
+            let textFont = UIFont.systemFont(ofSize: 15)
+            let textWidth = (text as NSString).boundingRect(with: CGSize(width: CGFloat.infinity, height: height),
+                                                            options: .usesLineFragmentOrigin,
+                                                            attributes: [.font: textFont],
+                                                            context: nil).width
+            
+            slotView = UIButton.init(frame: CGRect(x: 0, y: 0, width: textWidth + 16, height: height))
+            slotView?.setTitle(text, for: .normal)
+            slotView?.titleLabel?.font = textFont
+            return slotView
+        }
+        
+        /// 一张图片
+        if let image = content as? UIImage {
+            slotView = UIButton(frame: CGRect(x: 0, y: height * 0.1, width: height * 0.8, height: height * 0.8))
+            slotView?.setImage(image, for: .normal)
+            slotView?.imageView?.contentMode = .scaleAspectFit
+            return slotView
+        }
+        
+        /// 一个自定义按钮
+        if let button = content as? UIButton {
+            return button
+        }
+        
+        /// 一个自定义视图
+        if let view = content as? UIView {
+            slotView = UIButton(frame: view.bounds)
+            view.center = CGPoint(x: slotView!.bounds.midX, y: slotView!.bounds.midY)
+            slotView?.addSubview(view)
+            return slotView
+        }
+        
+        return slotView
+    }
+    
+    /// 点击插槽视图触发
+    @objc func onSlotViewTouched(_ button: UIButton) {
+        if let funcs = _callbacks?[button.hash] {
+            
+            /// 如果需要在点击之前做判断
+            var canTouched = true
+            if let before = funcs.0 {
+                canTouched = before()
+            }
+            if canTouched, let done = funcs.1 {
+                unowned let weakButton = button
+                done(weakButton)
+            }
+        }
+    }
+}
+
+//MARK: - Settings
+extension ELTextInput {
+    /// 设置边框样式
+    func setBorderStyle(with newStyle: BorderStyle) {
+        switch newStyle {
+        case .none:
+            layer.borderWidth = 0
+            layer.cornerRadius = 0
+        case .line:
+            layer.borderWidth = 1
+            layer.borderColor = ELColor.secondLevelBorderColor.cgColor
+            layer.cornerRadius = 0
+            layer.masksToBounds = true
+        case .rounded:
+            layer.borderWidth = 1
+            layer.borderColor = ELColor.secondLevelBorderColor.cgColor
+            layer.cornerRadius = bounds.height / 2
+            layer.masksToBounds = true
+        case .roundedTiny:
+            layer.borderWidth = 1
+            layer.borderColor = ELColor.secondLevelBorderColor.cgColor
+            layer.cornerRadius = 5
+            layer.masksToBounds = true
+        case .bottomLine:
+            layer.borderWidth = 0
+            layer.cornerRadius = 0
+            let bottomLineLayer = CAShapeLayer()
+            bottomLineLayer.fillColor = nil
+            bottomLineLayer.strokeColor = borderColor?.cgColor ?? ELColor.secondLevelBorderColor.cgColor
+            bottomLineLayer.zPosition = 1000
+            bottomLineLayer.path = {
+                let path = CGMutablePath()
+                path.move(to: CGPoint(x: 0, y: bounds.height))
+                path.addLine(to: CGPoint(x: bounds.width, y: bounds.height))
+                return path
+            }()
+            layer.addSublayer(bottomLineLayer)
+            return
+        }
+        _ = layer.sublayers?.map({ ($0 is CAShapeLayer) ? $0.removeFromSuperlayer() : nil })
+    }
+    
+    /// 设置边框颜色
+    func setBorderColor(with color: UIColor?) {
+        guard borderColor != color else { return }
+        layer.borderColor = color?.cgColor
+    }
+    
+    /// 设置使能
+    func setEnabled(with newValue: Bool) {
+        guard super.isUserInteractionEnabled != newValue else { return }
+        super.isUserInteractionEnabled = newValue
+        alpha = newValue ? 1 : 0.7
+    }
+    
+    /// 设置占位符是否居于视图左上方
+    func setLocationOfPlacehoder() {
+        let x = margins.left
+        let y = margins.top
+        let w = bounds.width - margins.right - x
+        let h = bounds.height - margins.bottom - y
+        
+        if isPlacedPlaceholderAtTop && isAnimatedWhenFocused {
+            _placeholderLabel.frame = CGRect(x: x, y: y + h * 0.3, width: w, height: h * 0.7)
+            field.frame = _placeholderLabel.frame
+        } else if isPlacedPlaceholderAtTop && !isAnimatedWhenFocused {
+            _placeholderLabel.frame = CGRect(x: x, y: y, width: w, height: h * 0.3)
+            field.frame = CGRect(x: x, y: y + h * 0.3, width: w, height: h * 0.7)
+        } else {
+            _placeholderLabel.isHidden = true
+            field.frame = CGRect(x: x, y: y, width: w, height: h)
+        }
+    }
+    
+    /// 设置占位符
+    func setPlaceholder(with text: String?) {
+        if isPlacedPlaceholderAtTop {
+            _placeholderLabel.text = text
+            field.placeholder = nil
+        } else {
+            _placeholderLabel.isHidden = true
+            field.placeholder = text
+        }
+    }
+}
+
+//MARK: - Notification & Fetch
+extension ELTextInput {
+    /// 添加观察者，观察输入框聚焦或输入情况
+    func addNotificationCenterObserver() {
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(onFocused),
+                                               name: UITextField.textDidBeginEditingNotification, object: field)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(onUnfocused),
+                                               name: UITextField.textDidEndEditingNotification, object: field)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(onChange),
+                                               name: UITextField.textDidChangeNotification, object: field)
+    }
+    
+    /// 移除观察者 有添加必有移除
+    func removeNotificationCenterObserver() {
         NotificationCenter.default.removeObserver(self)
     }
-}
-
-public extension ELTextInput {
-    /// 前置内容
-    func prepend(_ slotType: SlotType, onTouched: (() -> Void)? = nil) {
-        if let leftButton = createView(with: slotType, atLeft: true) {
-            if let onTouched = onTouched {
-                if savedCallbacks == nil {
-                    savedCallbacks = [AnyHashable: Any]()
-                }
-                leftButton.addTarget(self, action: #selector(onTouched(_:)), for: .touchUpInside)
-                savedCallbacks?[leftButton.hash] = onTouched
-            }
-        }
-    }
     
-    /// 附加内容
-    func append(_ slotType: SlotType, onTouched: (() -> Void)? = nil) {
-        if let rightButton = createView(with: slotType, atLeft: false) {
-            if let onTouched = onTouched {
-                if savedCallbacks == nil {
-                    savedCallbacks = [AnyHashable: Any]()
-                }
-                rightButton.addTarget(self, action: #selector(onTouched(_:)), for: .touchUpInside)
-                savedCallbacks?[rightButton.hash] = onTouched
-            }
-        }
-    }
-}
-
-extension ELTextInput {
-    
-    /// 更新边框样式
-    func updateBorderStyle(with style: UITextField.BorderStyle) {
-        switch style {
-        case .bezel:
-            layer.cornerRadius = bounds.height / 2
-            layer.borderWidth = 1
-        case .line:
-            layer.cornerRadius = 0
-            layer.borderWidth = 1
-        case .roundedRect:
-            layer.cornerRadius = ceil(bounds.height * 0.2)
-            layer.borderWidth = 1
-        default:
-            layer.cornerRadius = 0
-            layer.borderWidth = 0
-        }
-    }
-    
-    /// 实现前置视图
-    func createView(with slotType: SlotType, atLeft: Bool) -> UIButton? {
+    /// 输入框已聚焦
+    @objc func onFocused(_ notifi: Notification) {
+        /// 通知的时本输入框
+        guard let obj = notifi.object as? UITextField, obj == field else { return }
         
-        var slot: UIButton?
-        switch slotType {
-        case .text(let text):
-            let textWidth = (text as NSString).boundingRect(with: CGSize(width: CGFloat.infinity, height: bounds.height),
-                                                            options: .usesLineFragmentOrigin,
-                                                            attributes: [.font: UIFont.systemFont(ofSize: 14)],
-                                                            context: nil).width + 20
-            slot = UIButton(frame: CGRect(x: 0, y: 0, width: textWidth, height: bounds.height))
-            slot?.setTitle(text, for: .normal)
-            slot?.titleLabel?.font = UIFont.systemFont(ofSize: 14)
-            slot?.setTitleColor(ELColor.rgb(96, 98, 102), for: .normal)
-        case .icon(let icon):
-            slot = UIButton(frame: CGRect(x: 0, y: 0, width: 35, height: bounds.height))
-            slot?.setImage(ELIcon.get(icon)?.scale(to: 20), for: .normal)
-        case .image(let image):
-            slot = UIButton(frame: CGRect(x: 0, y: 0, width: 35, height: bounds.height))
-            slot?.setImage(image.scale(to: min(bounds.height * 0.6, 96)), for: .normal)
-        case .countDown(let text, _, _):
-            let textWidth = (text as NSString).boundingRect(with: CGSize(width: CGFloat.infinity, height: bounds.height),
-                                                            options: .usesLineFragmentOrigin,
-                                                            attributes: [.font: UIFont.systemFont(ofSize: 14)],
-                                                            context: nil).width + 20
-            slot = UIButton(frame: CGRect(x: 0, y: 0, width: textWidth, height: bounds.height))
-            slot?.setTitle(text, for: .normal)
-            slot?.titleLabel?.font = UIFont.systemFont(ofSize: 14)
-            slot?.setTitleColor(.white, for: .normal)
-            slot?.backgroundColor = ELColor.primary
+        /// 是否执行动画
+        if isPlacedPlaceholderAtTop && isAnimatedWhenFocused && (field.text == nil || field.text == "") {
+            let x = margins.left
+            let y = margins.top
+            let w = bounds.width - margins.right - x
+            let h = bounds.height - margins.bottom - y
+            
+            UIView.animate(withDuration: 0.35) {[unowned self] in
+                self._placeholderLabel.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+                self._placeholderLabel.frame  = CGRect(x: x, y: y, width: w, height: h * 0.3)
+            }
         }
-        
-        if atLeft {
-            leftView = slot
-            leftViewMode = .always
-            leftSlotType = slotType
-        } else {
-            rightView = slot
-            rightViewMode = .always
-            rightSlotType = slotType
-        }
-        return slot
     }
     
-    /// Add a mask view when disabled
-    func createMaskView(if enabled: Bool) {
-        isUserInteractionEnabled = enabled
-        if enabled {
-            layer.mask = nil
-        } else {
-            layer.mask = {
-                let maskLayer = CAShapeLayer()
-                maskLayer.frame = bounds
-                maskLayer.backgroundColor = UIColor.white.withAlphaComponent(0.7).cgColor
-                return maskLayer
-            }()
+    /// 输入框变为不聚焦
+    @objc func onUnfocused(_ notifi: Notification) {
+        /// 通知的时本输入框
+        guard let obj = notifi.object as? UITextField, obj == field else { return }
+        
+        if isPlacedPlaceholderAtTop && isAnimatedWhenFocused && (field.text == nil || field.text == "") {
+            let x = margins.left
+            let y = margins.top
+            let w = bounds.width - margins.right - x
+            let h = bounds.height - margins.bottom - y
+            
+            UIView.animate(withDuration: 0.35) {[unowned self] in
+                self._placeholderLabel.transform = CGAffineTransform.identity
+                self._placeholderLabel.frame  = CGRect(x: x, y: y + h * 0.3, width: w, height: h * 0.7)
+            }
         }
+    }
+    
+    /// 输入框字符变化时
+    @objc func onChange(_ notifi: Notification) {
+        /// 通知的时本输入框
+        guard let obj = notifi.object as? UITextField, obj == field else { return }
+        
+        onCreateFetchTimer()
     }
 }
 
-//MARK: - Touched or Notification
-extension ELTextInput {
-    /// Did began edit
-    @objc func onTextInputBeganEdit(_ notification: Notification) {
-        if let obj = notification.object as? ELTextInput, obj == self {
-            if !shouldValidateWhileEditing || isValidated {
-                layer.borderColor = borderColorWhileEditing.cgColor
-            }
-            if let fetch = fetchSuggestions {
-                fetch(text, onNeededKeys, onFetchedSuggestions)
-            }
-        }
+//MARK: - Fetch suggestions
+extension ELTextInput: ELTablePoperProtocol {
+    /// 同步/异步输入建议返回对象取值所需的key
+    @objc func onFetchResultsKeys(_ keys: [String]?) {
+        _suggestionsTable.keysOfValue = keys ?? ["value", "subvalue"]
     }
     
-    /// Did ended edit
-    @objc func onTextInputEndedEdit(_ notification: Notification) {
-        if let obj = notification.object as? ELTextInput, obj == self {
-            if !shouldValidateWhileEditing || isValidated {
-                layer.borderColor = borderColorEndEditing.cgColor
-            }
+    /// 开始同步/异步输入建议
+    @objc func onFetching() {
+        
+        /// 执行同步输入建议
+        if let syncFunc = syncFetchSuggestions {
+            _suggestionsTable.contents = syncFunc(field.text, onFetchResultsKeys)
+            _suggestionsTable.show()
         }
-    }
-    
-    /// Text input changed
-    @objc func onTextInputChanged(_ notification: Notification) {
-        if let obj = notification.object as? ELTextInput, obj == self {
-            if shouldValidateWhileEditing && !isValidated {
-                layer.borderColor = borderColorWhenErrorOccurred.cgColor
+            
+            /// 执行异步输入建议
+        else if let asyncFunc = asyncFetchSuggestions {
+            if let _ = fetchDebounceTimeInterval {
+                onCreateFetchTimer()
             } else {
-                layer.borderColor = borderColorWhileEditing.cgColor
-            }
-            /// 'Debounce'模式
-            if let time = debounceTimeForFetchingSuggestions {
-                debounce(time)
-            } else {
-                onStartFetching()
-            }
-        }
-    }
-    
-    /// On touched slot view
-    @objc func onTouched(_ button: UIButton) {
-        if button == leftView, let leftSlot = leftSlotType {
-            switch leftSlot {
-            case .countDown(let title, let seconds, let format):
-                countingDown(button, title: title, seconds: seconds, format: format)
-            default:
-                break
-            }
-        }
-        if button == rightView, let rightSlot = rightSlotType {
-            switch rightSlot {
-            case .countDown(let title, let seconds, let format):
-                countingDown(button, title: title, seconds: seconds, format: format)
-            default:
-                break
-            }
-        }
-        if let onTouched = savedCallbacks?[button.hash] as? (() -> Void) {
-            onTouched()
-        }
-    }
-    
-    /// Counting down
-    func countingDown(_ button: UIButton, title: String, seconds: Int, format: String?) {
-        button.isEnabled = false
-        var seconds = seconds
-        let format = format ?? "/@/秒"
-        button.backgroundColor = ELColor.rgb(96, 98, 102)
-        countDownTimer.schedule(wallDeadline: .now(), repeating: .seconds(1))
-        countDownTimer.setEventHandler {[unowned countDownTimer] in
-            DispatchQueue.main.async {[unowned countDownTimer] in
-                if seconds > 0 {
-                    button.setTitle(format.replacingOccurrences(of: "/@/", with: "\(seconds)"), for: .normal)
-                } else {
-                    button.backgroundColor = ELColor.primary
-                    button.setTitle(title, for: .normal)
-                    button.isEnabled = true
-                    countDownTimer.suspend()
+                asyncFunc(field.text, onFetchResultsKeys) {[unowned self] contents in
+                    self._suggestionsTable.contents = contents
+                    self._suggestionsTable.show()
                 }
             }
-            seconds -= 1
-        }
-        countDownTimer.resume()
-    }
-}
-
-//MARK: - Fetch Suggestions
-extension ELTextInput {
-    /// Debounce
-    func debounce(_ time: TimeInterval) {
-        /// 创建定时器，设定'debounceTime'毫秒后触发
-        if debounceTimer == nil {
-            debounceTimer = Timer.scheduledTimer(timeInterval: time / 1000,
-                                                 target: self,
-                                                 selector: #selector(onStartFetching),
-                                                 userInfo: nil,
-                                                 repeats: true)
         }
         
+        /// 暂停定时器
+        _debounceTimer?.fireDate = Date.distantFuture
+    }
+    
+    /// 输入建议定时器
+    func onCreateFetchTimer() {
+        guard let milliseconds = fetchDebounceTimeInterval else {
+            onFetching()
+            return
+        }
+        if _debounceTimer == nil {
+            _debounceTimer = Timer.scheduledTimer(timeInterval: milliseconds / 1000,
+                                                  target: self,
+                                                  selector: #selector(onFetching),
+                                                  userInfo: nil,
+                                                  repeats: true)
+        }
         /// 当前时间 - 上次输入时间 < 间隔时间，暂停定时器，重新计时
-        if let interval = timeInterval, (Date.timeIntervalSinceReferenceDate - interval) * 1000 < time {
-            debounceTimer?.fireDate = Date.distantFuture
+        if let interval = _timeInterval, (Date.timeIntervalSinceReferenceDate - interval) * 1000 < milliseconds {
+            _debounceTimer?.fireDate = Date.distantFuture
         }
-        timeInterval = Date.timeIntervalSinceReferenceDate
+        _timeInterval = Date.timeIntervalSinceReferenceDate
         
         /// 设置'debountTime'毫秒后触发
-        debounceTimer?.fireDate = Date().addingTimeInterval(time / 1000)
-    }
-    
-    /// 搜索建议触发
-    @objc func onStartFetching(_ timer: Timer? = nil) {
-        if let fetch = fetchSuggestions {
-            fetch(text, onNeededKeys, onFetchedSuggestions)
-        }
-        else if let fetchAsync = fetchSuggestionsAsync {
-            fetchAsync(text, onNeededKeys, onFetchedSuggestions)
-            tablePoper?.contents = nil
-            tablePoper?.show()
-        }
-        debounceTimer?.fireDate = Date.distantFuture
-    }
-    
-    /// 取搜索建议结果中的值所需的key
-    @objc func onNeededKeys(_ keys: [String]?) {
-        tablePoper?.keysOfValue = keys ?? ["value", "subvalue"]
-    }
-    
-    /// 远程搜索建议回调
-    @objc func onFetchedSuggestions(_ texts: [Any]?) {
-        if isFirstResponder {
-            if let texts = texts as? [String] {
-                if texts.count == 0 {
-                    tablePoper?.removeFromSuperview()
-                    return
-                }
-                tablePoper?.contents = texts
-            }
-            else if let textsInfo = texts as? [[String: Any]] {
-                if textsInfo.count == 0 {
-                    tablePoper?.removeFromSuperview()
-                    return
-                }
-                tablePoper?.contents = textsInfo
-            }
-            tablePoper?.show()
-        }
-    }
-}
-
-//MARK: - Override functions
-extension ELTextInput {
-    
-    /// Edit text in rect
-    public override func editingRect(forBounds bounds: CGRect) -> CGRect {
-        var textRect = bounds
-        textRect.origin.x = (layer.cornerRadius == bounds.height / 2) ? 16 : 8
-        textRect.size.width -= textRect.origin.x
+        _debounceTimer?.fireDate = Date().addingTimeInterval(milliseconds / 1000)
         
-        if let leftView = leftView {
-            textRect.origin.x = leftView.frame.maxX
-            textRect.size.width = textRect.width - textRect.minX
-        }
-        if let rightView = rightView {
-            textRect.size.width = textRect.width - rightView.frame.width
-        }
-        return textRect
     }
     
-    /// Draw text in rect
-    public override func textRect(forBounds bounds: CGRect) -> CGRect {
-        return editingRect(forBounds: bounds)
-    }
-}
-
-extension ELTextInput: ELTablePoperProtocol {
-    /// 已选择建议内容
+    /// 选中选项时触发
     public func tablePoper(_ poper: ELTablePoper, didSelectedRowsAt indexes: [Int], with values: [String]) {
-        text = values[0]
-    }
-    
-    /// 当建议视图隐藏后
-    public func onHiddenPoper(_ poper: ELPoper) {
-        resignFirstResponder()
+        field.text = values.joined(separator: "/")
     }
 }

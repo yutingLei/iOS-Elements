@@ -15,64 +15,72 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        //        elButtons()
+//                buttons()
         
         //        radios()
         
         //        selections()
         
-//                textInputs()
+                textInputs()
         
         //        numberInput()
         
 //        select()
-        poper()
+//        poper()
     }
     
-    func elButtons() {
-        let properties = ["Nothing settings", "isTinyRound = true", "isRound = true", "isLoading = true", "isPlain = true", "With icon", "isCircle = true", "isImageInLeft = false"]
-        let allStyles: [[ELButton.Style]] = [[.normal, .primary], [.success, .info], [.warning, .danger], [.info, .success], [.warning, .danger], [.normal, .primary], [.success, .info], [.success, .info]]
-        let titles = [["默认按钮", "主要按钮"], ["成功按钮", "信息按钮"], ["警告按钮", "危险按钮"], ["信息按钮", "成功按钮"], ["警告按钮", "危险按钮"], ["默认按钮", "主要按钮"], ["成功按钮", "信息按钮"], ["成功按钮", "信息按钮"]]
-        let iconNames: [ELIcon.Name] = [.tickets, .bell]
+    func buttons() {
+        let scrollView = UIScrollView(frame: CGRect(x: 0, y: 64, width: view.bounds.width, height: view.bounds.height - 64))
+        view.addSubview(scrollView)
+        
         var x: CGFloat = 20
-        var y: CGFloat = 80
+        var y: CGFloat = 0
         let w = (view.bounds.width - 60) / 2
         let h: CGFloat = 45
-        for i in 0..<properties.count {
-            let label = UILabel.init(frame: CGRect.init(x: x, y: y, width: 300, height: 25))
+        
+        let styles: [ELButton.Style] = [.normal, .primary, .success, .info, .warning, .danger]
+        let types = ["默认按钮", "主要按钮", "成功按钮", "信息按钮", "警告按钮", "危险按钮"]
+        let settings = ["isPlained", "isTinyRound", "isRounded", "isCircled", "isLoading", "isEnabled", "setImage"]
+        
+        for i in 0..<settings.count {
+            let label = UILabel(frame: CGRect(x: x, y: y, width: 300, height: 25))
             label.font = UIFont.boldSystemFont(ofSize: 18)
-            label.text = properties[i]
-            view.addSubview(label)
+            label.text = settings[i]
+            scrollView.addSubview(label)
             y += 25
             
-            for j in 0..<allStyles[i].count {
-                let button = ELButton(frame: CGRect(x: x, y: y, width: w, height: h), withStyle: allStyles[i][j])
-                button.addTarget(self, action: #selector(onTouch), for: .touchUpInside)
-                button.setTitle(titles[i][j], for: .normal)
-                view.addSubview(button)
-                x += (w + 20)
+            for j in 1...types.count {
+                let button = ELButton(frame: CGRect(x: x, y: y, width: w, height: h))
+                button.style = styles[j - 1]
+                if i == settings.count - 1 {
+                    button.setTitle(types[j - 1], for: .normal)
+                    button.setImage(ELIcon.get(.search), for: .normal)
+                    button.layoutImageAtRight = j % 2 == 0
+                } else {
+                    button.setTitle(types[j - 1], for: .normal)
+                }
                 
-                if i == 1 {
-                    button.isTinyRound = true
-                } else if i == 2 {
-                    button.isRound = true
-                } else if i == 3 {
-                    button.isLoading = true
-                } else if i == 4 {
-                    button.isPlain = true
-                } else if i == 5 {
-                    button.setImage(iconNames[j], for: .normal)
-                } else if i == 6 {
-                    button.isCircle = true
-                    button.setImage(iconNames[j], for: .normal)
-                } else if i == 7 {
-                    button.isImageInLeft = false
-                    button.setImage(iconNames[j], for: .normal)
+                switch i {
+                case 0: button.isPlained = true
+                case 1: button.isTinyRounded = true
+                case 2: button.isRounded = true
+                case 3: button.isCircled = true
+                case 4: button.isLoading = true
+                case 5: button.isEnabled = false
+                default:break
+                }
+                
+                scrollView.addSubview(button)
+                
+                x += (w + 20)
+                if j % 2 == 0 {
+                    x = 20
+                    y += (h + 15)
                 }
             }
             x = 20
-            y += (h + 20)
         }
+        scrollView.contentSize = CGSize(width: 0, height: y)
     }
     
     
@@ -108,54 +116,66 @@ class ViewController: UIViewController {
     }
     
     func textInputs() {
+        let scrollView = UIScrollView(frame: CGRect(x: 0, y: 64, width: view.bounds.width, height: view.bounds.height - 64))
+        view.addSubview(scrollView)
+        
         let x: CGFloat = 20
-        var y: CGFloat = 80
+        var y: CGFloat = 0
         let w = view.bounds.width - 40
         let h: CGFloat = 40
         
         /// 边框(borderStyle)
-        let borders: [UITextField.BorderStyle] = [.none, .line, .roundedRect, .bezel]
+        let borders: [ELTextInput.BorderStyle] = [.none, .line, .roundedTiny, .rounded, .bottomLine]
         let label = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
         label.font = UIFont.boldSystemFont(ofSize: 18)
         label.text = "Border Styles"
-        view.addSubview(label)
+        scrollView.addSubview(label)
         y += 35
         for border in borders {
             let input = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
             input.borderStyle = border
-            view.addSubview(input)
+            scrollView.addSubview(input)
             y += 45
         }
         
         /// Prepend
-        let slots1: [ELTextInput.SlotType] = [.text("https://"), .icon(.bell), .image(ELIcon.get(.date)!)]
+        let button1 = ELButton(frame: CGRect(x: 0, y: 0, width: 80, height: h))
+        button1.style = .primary
+        button1.isRounded = false
+        button1.setTitle("https://", for: .normal)
+        let slots: [Any] = ["https://", ELIcon.get(.search)!, button1]
         let label1 = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
         label1.font = UIFont.boldSystemFont(ofSize: 18)
         label1.text = "Prepend"
-        view.addSubview(label1)
+        scrollView.addSubview(label1)
         y += 35
-        for slot in slots1 {
+        for slot in slots {
             let input = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
-            input.prepend(slot) {
-                print("Touched prepend: \(slot)")
+            input.prepend(slot, beforeTouch: nil) {slotView in
+                print("你点击了\(slotView)")
             }
-            view.addSubview(input)
+            scrollView.addSubview(input)
             y += 45
         }
         
         /// Append
-        let slots2: [ELTextInput.SlotType] = [.text(".com"), .icon(.search), .image(ELIcon.get(.document)!), .countDown("获取验证码", 10, nil)]
+        let button2 = ELButton(frame: CGRect(x: 0, y: 0, width: 80, height: 30))
+        button2.style = .primary
+        button2.isPlained = true
+        button2.isRounded = true
+        button2.setTitle("获取验证码", for: .normal)
+        let slots2: [Any] = [".com", ELIcon.get(.search)!, button2]
         let label2 = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
         label2.font = UIFont.boldSystemFont(ofSize: 18)
         label2.text = "Append"
-        view.addSubview(label2)
+        scrollView.addSubview(label2)
         y += 35
         for slot in slots2 {
             let input = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
-            input.append(slot) {
-                print("Touched append: \(slot)")
+            input.append(slot, beforeTouch: nil) {slotView in
+                print("你点击了\(slotView)")
             }
-            view.addSubview(input)
+            scrollView.addSubview(input)
             y += 45
         }
         
@@ -173,28 +193,28 @@ class ViewController: UIViewController {
         let label3 = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
         label3.font = UIFont.boldSystemFont(ofSize: 18)
         label3.text = "本地搜索(fetchSuggestions)"
-        view.addSubview(label3)
+        scrollView.addSubview(label3)
         y += 35
         let input3 = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
-        input3.fetchSuggestions = { queryString, resultOfKeys, callback in
+        input3.syncFetchSuggestions = { queryString, resultOfKeys in
             resultOfKeys?(["value", "address"])
             if let queryString = queryString, queryString != "" {
-                callback(suggestions.map({ ($0["value"] as! String).contains(queryString) ? $0 : nil }).compactMap({ $0 }))
+                return (suggestions.map({ ($0["value"] as! String).contains(queryString) ? $0 : nil }).compactMap({ $0 }))
             } else {
-                callback(suggestions)
+                return suggestions
             }
         }
-        view.addSubview(input3)
+        scrollView.addSubview(input3)
         y += 45
         
         let label4 = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
         label4.font = UIFont.boldSystemFont(ofSize: 18)
         label4.text = "远程搜索(fetchSuggestionsAsync)"
-        view.addSubview(label4)
+        scrollView.addSubview(label4)
         y += 35
         let input4 = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: h))
-        input4.debounceTimeForFetchingSuggestions = 1000
-        input4.fetchSuggestionsAsync = { queryString, resultOfKeys, callback in
+        input4.fetchDebounceTimeInterval = 1000
+        input4.asyncFetchSuggestions = { queryString, resultOfKeys, callback in
             resultOfKeys?(["value", "address"])
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: {
                 if let queryString = queryString {
@@ -204,8 +224,38 @@ class ViewController: UIViewController {
                 }
             })
         }
-        view.addSubview(input4)
+        scrollView.addSubview(input4)
         y += 45
+        
+        /// isPlacedPlaceholderAtTop
+        let label5 = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
+        label5.font = UIFont.boldSystemFont(ofSize: 18)
+        label5.text = "isPlacedPlaceholderAtTop = true"
+        scrollView.addSubview(label5)
+        y += 35
+        let input5 = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: 70))
+        input5.isPlacedPlaceholderAtTop = true
+        input5.placeholder = "手机号码"
+        input5.borderStyle = .bottomLine
+        scrollView.addSubview(input5)
+        y += 75
+        
+        
+        /// isAnimatedWhenFocused
+        let label6 = UILabel(frame: CGRect(x: x, y: y, width: w, height: 35))
+        label6.font = UIFont.boldSystemFont(ofSize: 18)
+        label6.text = "isAnimatedWhenFocused = true"
+        scrollView.addSubview(label6)
+        y += 35
+        let input6 = ELTextInput(frame: CGRect(x: x, y: y, width: w, height: 70))
+        input6.isPlacedPlaceholderAtTop = true
+        input6.isAnimatedWhenFocused = true
+        input6.placeholder = "手机号码"
+        input6.borderStyle = .bottomLine
+        scrollView.addSubview(input6)
+        y += 75
+        
+        scrollView.contentSize = CGSize.init(width: 0, height: y)
     }
     
     func poper() {

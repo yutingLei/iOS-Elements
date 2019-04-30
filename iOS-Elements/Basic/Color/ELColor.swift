@@ -22,6 +22,30 @@ public class ELColor: UIColor {
 
     /// 消息提示色
     public static let info = ELColor.rgb(144, 147, 153)
+    
+    /// 主要文字颜色
+    public static let primaryText = ELColor.withHex("#303133")
+    
+    /// 常规文字颜色
+    public static let textColor = ELColor.withHex("#606266")
+    
+    /// 次要文字颜色
+    public static let secondaryText = ELColor.withHex("#909399")
+    
+    /// 占位文字颜色
+    public static let placeholderText = ELColor.withHex("#C0C4CC")
+    
+    /// 一级边框颜色
+    public static let firstLevelBorderColor = ELColor.withHex("#DCDFE6")
+    
+    /// 二级边框颜色
+    public static let secondLevelBorderColor = ELColor.withHex("#E4E7ED")
+    
+    /// 三级边框颜色
+    public static let thirdLevelBorderColor = ELColor.withHex("#EBEEF5")
+    
+    /// 四级边框颜色
+    public static let forthLevelBorderColor = ELColor.withHex("#F2F6FC")
 }
 
 //MARK: - Methods
