@@ -220,13 +220,17 @@ extension ELPoper {
             bezierPath.addLine(to: lc.offset(dx: arrowHeight, dy: arrowHeight))
         default:
             let x: CGFloat
-            switch arrowAlignment {
-            case .right:
-                x = refRect.maxX - containerView.frame.minX - min(containerView.frame.width / 2, 30)
-            case .center:
-                x = refRect.minX - containerView.frame.minX + refRect.width / 2
-            default:
-                x = refRect.minX - containerView.frame.minX + min(containerView.frame.width / 2, 30)
+            if containerView.frame.width < refRect.width {
+                x = containerView.frame.width / 2
+            } else {
+                switch arrowAlignment {
+                case .right:
+                    x = refRect.maxX - containerView.frame.minX - min(containerView.frame.width / 2, 30)
+                case .center:
+                    x = refRect.minX - containerView.frame.minX + refRect.width / 2
+                default:
+                    x = refRect.minX - containerView.frame.minX + min(containerView.frame.width / 2, 30)
+                }
             }
             if containerView.frame.minY < refRect.minY {
                 bezierPath.move(to: CGPoint(x: x, y: containerView.bounds.maxY))
@@ -348,11 +352,20 @@ extension ELPoper {
             containerView.frame.origin.x = refRect.maxX
             containerView.frame.origin.y = refRect.midY - containerView.frame.height / 2
         default:
+            if containerView.frame.width < refRect.width {
+                if arrowAlignment == .left {
+                    containerView.frame.origin.x = refRect.minX
+                } else if arrowAlignment == .center {
+                    containerView.frame.origin.x = refRect.midX - (containerView.frame.width / 2)
+                } else {
+                    containerView.frame.origin.x = refRect.maxX - containerView.frame.width
+                }
+            } else {
+                containerView.frame.origin.x = refRect.midX - (containerView.frame.width / 2)
+            }
             if refRect.midY >= screenHeight / 2 {
-                containerView.frame.origin.x = refRect.minX
                 containerView.frame.origin.y = refRect.minY - containerView.frame.height
             } else {
-                containerView.frame.origin.x = refRect.minX
                 containerView.frame.origin.y = refRect.maxY
             }
         }
