@@ -438,7 +438,7 @@ extension ELTextInput {
 extension ELTextInput: ELTablePoperProtocol {
     /// 同步/异步输入建议返回对象取值所需的key
     @objc func onFetchResultsKeys(_ keys: [String]?) {
-        _suggestionsTable.keysOfValue = keys ?? ["value", "subvalue"]
+        _suggestionsTable.keysToContents = keys
     }
     
     /// 开始同步/异步输入建议
