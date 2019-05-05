@@ -49,10 +49,17 @@ public extension ELPoper {
         case unfold
     }
     
-    /// 内容容器视图主题
-    enum ContainerTheme {
+    /// 内容主题
+    enum Theme {
         case light
         case dark
+    }
+    
+    /// 统一定义对齐方式
+    enum Alignment {
+        case left
+        case center
+        case right
     }
 }
 
@@ -68,7 +75,7 @@ public class ELPoper: UIView {
     public var animationStyle: AnimationStyle = .fade
     
     /// 内容容器视图主题(默认：.light)
-    public var containerTheme: ContainerTheme = .light { didSet { setTheme() } }
+    public var theme: Theme = .light { didSet { setTheme() } }
     
     /// 是否全屏(默认：false)
     public var isFullScreen: Bool = false { didSet { createCloseButton() } }
@@ -78,13 +85,13 @@ public class ELPoper: UIView {
     public var isFullWidth: Bool = false
     
     /// 容器视图是否为圆角(默认：true)
-    public var isRoundedContainerView: Bool = true
+    public var isRounded: Bool = true
     
     /// 是否使用箭头指向参考视图(默认：true)
-    public var isContainedArrow: Bool = true
+    public var isArrowed: Bool = true
     
-    /// 当有箭头时，箭头是否位于参考视图中间(默认：false)
-    public var isArrowCentered: Bool = false
+    /// 当isContainedArrow = true时, 设置箭头对齐方式(默认: .left)
+    public var arrowAlignment: Alignment = .left
     
     /// 当显示弹出内容时，是否形成鲜明对比(默认：true)
     public var isContrasted: Bool = true { didSet { setContrast() } }
@@ -94,17 +101,17 @@ public class ELPoper: UIView {
     
     /// 内容视图固定大小, 当isFullScreen/isFullWidth = true时，设置此属性无效
     /// 如果设置的size中宽或高为0,表示根据内容自定义宽度或高度
-    public var fixedSizeOfContainerView: CGSize?
+    public var fixedSize: CGSize?
     
     /// 参考视图
     private(set) public weak var refrenceView: UIView!
     
     /// 设置内容视图与容器视图的边距(默认：8)
-    public var contentViewLayoutMargin: CGFloat = 8
+    public var padding: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
     
     /// 容器视图与屏幕边距(默认：8)
     /// 如果有"刘海"，表示距"刘海"的距离
-    public var containerViewLayoutMargin: CGFloat = 8
+    public var margin: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
     
     /// 内容容器视图(get only)
     private(set) var containerView: ELShadowView!
@@ -158,9 +165,9 @@ extension ELPoper {
     
     /// Create a borderLayer for containerView
     func createContainerViewsBorderLayer() {
-        guard isContainedArrow else {
+        guard isArrowed else {
             containerView.effectsView.layer.mask = nil
-            containerView.cornerRadius = isRoundedContainerView ? 5 : 0
+            containerView.cornerRadius = isRounded ? 5 : 0
             return
         }
         containerView.cornerRadius = 0
@@ -212,7 +219,15 @@ extension ELPoper {
             bezierPath.addQuadCurve(to: lb.offset(dx: arrowHeight, dy: -5), controlPoint: lb.offset(dx: arrowHeight))
             bezierPath.addLine(to: lc.offset(dx: arrowHeight, dy: arrowHeight))
         default:
-            let x = refRect.minX - containerView.frame.minX + (isArrowCentered ? (refRect.width / 2) : min(containerView.frame.width / 2, 50))
+            let x: CGFloat
+            switch arrowAlignment {
+            case .right:
+                x = refRect.maxX - containerView.frame.minX - min(containerView.frame.width / 2, 30)
+            case .center:
+                x = refRect.minX - containerView.frame.minX + refRect.width / 2
+            default:
+                x = refRect.minX - containerView.frame.minX + min(containerView.frame.width / 2, 30)
+            }
             if containerView.frame.minY < refRect.minY {
                 bezierPath.move(to: CGPoint(x: x, y: containerView.bounds.maxY))
                 bezierPath.addLine(to: CGPoint(x: x + arrowHeight, y: containerView.bounds.maxY - arrowHeight))
@@ -251,7 +266,7 @@ extension ELPoper {
 extension ELPoper {
     /// The theme's setting
     @objc func setTheme() {
-        switch containerTheme {
+        switch theme {
         case .light:
             containerView.effectsView.backgroundColor = .white
             closeButton?.titleLabel?.textColor = ELColor.rgb(54, 55, 56)
@@ -286,7 +301,7 @@ extension ELPoper {
         }
         
         /// 如果固定不为空大小
-        if let fixedSize = fixedSizeOfContainerView {
+        if let fixedSize = fixedSize {
             if fixedSize.width != 0 {
                 containerViewsSize.width = fixedSize.width
             }
@@ -297,10 +312,10 @@ extension ELPoper {
         
         /// 根据弹出位置，设置容器视图的大小
         if containerViewsSize.width == 0 {
-            containerViewsSize.width = contentSize.width + contentViewLayoutMargin * 2 + (location == .auto ? 0 : suggestionArrowsHeight)
+            containerViewsSize.width = contentSize.width + padding.lar + (location == .auto ? 0 : suggestionArrowsHeight)
         }
         if containerViewsSize.height == 0 {
-            containerViewsSize.height = contentSize.height + contentViewLayoutMargin * 2 + (location == .auto ? suggestionArrowsHeight : 0)
+            containerViewsSize.height = contentSize.height + padding.tab + (location == .auto ? suggestionArrowsHeight : 0)
         }
         containerView.frame.size = containerViewsSize
     }
@@ -348,11 +363,11 @@ extension ELPoper {
     func sizeContainerViewToScreen() {
         guard !isFullScreen else { return }
         if isFullWidth {
-            if containerView.frame.origin.y < (statusBarHeight + containerViewLayoutMargin) {
-                containerView.frame.size.height = (statusBarHeight + containerViewLayoutMargin) - containerView.frame.origin.y
-                containerView.frame.origin.y = statusBarHeight + containerViewLayoutMargin
+            if containerView.frame.origin.y < (statusBarHeight + margin.top) {
+                containerView.frame.size.height = (statusBarHeight + margin.top) - containerView.frame.origin.y
+                containerView.frame.origin.y = statusBarHeight + margin.top
             } else if containerView.frame.maxY > screenHeight {
-                containerView.frame.size.height -= (containerView.frame.maxY - screenHeight + containerViewLayoutMargin)
+                containerView.frame.size.height -= (containerView.frame.maxY - screenHeight + margin.bottom)
             }
             return
         }
@@ -365,39 +380,39 @@ extension ELPoper {
         case .left, .right:
             /// 宽度适配
             if location == .left {
-                if containerView.frame.origin.x < containerViewLayoutMargin {
-                    containerView.frame.origin.x = containerViewLayoutMargin
+                if containerView.frame.origin.x < margin.left {
+                    containerView.frame.origin.x = margin.left
                     containerView.frame.size.width = refRect.minX - containerView.frame.minX
                 }
             } else {
                 if containerView.frame.maxX > screenWidth {
-                    containerView.frame.size.width = screenWidth - containerViewLayoutMargin - refRect.maxX
+                    containerView.frame.size.width = screenWidth - margin.right - refRect.maxX
                 }
             }
             /// 高度适配
-            if containerView.frame.origin.y < (statusBarHeight + containerViewLayoutMargin) {
-                containerView.frame.size.height = (statusBarHeight + containerViewLayoutMargin) - containerView.frame.origin.y
-                containerView.frame.origin.y = statusBarHeight + containerViewLayoutMargin
+            if containerView.frame.origin.y < (statusBarHeight + margin.top) {
+                containerView.frame.size.height = (statusBarHeight + margin.top) - containerView.frame.origin.y
+                containerView.frame.origin.y = statusBarHeight + margin.top
             }
             if containerView.frame.maxY > screenHeight {
-                containerView.frame.size.height -= (containerView.frame.maxY - screenHeight + containerViewLayoutMargin)
+                containerView.frame.size.height -= (containerView.frame.maxY - screenHeight + margin.bottom)
             }
         default:
             /// 高度适配
-            if containerView.frame.origin.y < (statusBarHeight + containerViewLayoutMargin) {
-                containerView.frame.size.height = (statusBarHeight + containerViewLayoutMargin) - containerView.frame.origin.y
-                containerView.frame.origin.y = statusBarHeight + containerViewLayoutMargin
+            if containerView.frame.origin.y < (statusBarHeight + margin.top) {
+                containerView.frame.size.height = (statusBarHeight + margin.top) - containerView.frame.origin.y
+                containerView.frame.origin.y = statusBarHeight + margin.top
             } else if containerView.frame.maxY > screenHeight {
-                containerView.frame.size.height -= (containerView.frame.maxY - (screenHeight - containerViewLayoutMargin))
+                containerView.frame.size.height -= (containerView.frame.maxY - (screenHeight - margin.bottom))
             }
             
             /// 宽度适配
-            if containerView.frame.maxX > (screenWidth - containerViewLayoutMargin) {
-                containerView.frame.origin.x -= (containerView.frame.maxX - (screenWidth - containerViewLayoutMargin))
+            if containerView.frame.maxX > (screenWidth - margin.right) {
+                containerView.frame.origin.x -= (containerView.frame.maxX - (screenWidth - margin.right))
             }
-            if containerView.frame.minX < containerViewLayoutMargin {
-                containerView.frame.origin.x = containerViewLayoutMargin
-                containerView.frame.size.width = screenWidth - containerViewLayoutMargin * 2
+            if containerView.frame.minX < margin.left {
+                containerView.frame.origin.x = margin.left
+                containerView.frame.size.width = screenWidth - margin.lar
             }
         }
     }
@@ -468,7 +483,7 @@ public extension ELPoper {
     
     /// Show poper with given animation style
     @objc func show() {
-        if shouldUpdateContainerView && isContainedArrow && !isFullScreen {
+        if shouldUpdateContainerView && isArrowed && !isFullScreen {
             shouldUpdateContainerView = false
             createContainerViewsBorderLayer()
         }
@@ -511,6 +526,13 @@ extension CGPoint {
         newP.y += dy
         return newP
     }
+}
+
+extension UIEdgeInsets {
+    /// 左右距离和
+    public var lar: CGFloat { get { return left + right } }
+    /// 上下距离和
+    public var tab: CGFloat { get { return top + bottom } }
 }
 
 class ELShadowView: UIView {

@@ -103,7 +103,7 @@ extension ELTextPoper {
     /// 更新主题
     override func setTheme() {
         super.setTheme()
-        if containerTheme == .light {
+        if theme == .light {
             textView.backgroundColor = UIColor.white
         } else {
             textView.backgroundColor = ELColor.rgb(54, 55, 56)
@@ -123,9 +123,9 @@ extension ELTextPoper {
         var limitWidth: CGFloat = width
         let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
         if location == .left {
-            limitWidth = refRect.minX - contentViewLayoutMargin * 2 - suggestionArrowsHeight - containerViewLayoutMargin
+            limitWidth = refRect.minX - padding.lar - suggestionArrowsHeight - margin.left
         } else if location == .right {
-            limitWidth = screenWidth - containerViewLayoutMargin - contentViewLayoutMargin * 2 - suggestionArrowsHeight - refRect.maxX
+            limitWidth = screenWidth - margin.right - padding.lar - suggestionArrowsHeight - refRect.maxX
         }
         
         switch location {
@@ -153,10 +153,10 @@ extension ELTextPoper {
         
         /// 如果是全屏
         if isFullScreen {
-            textView.frame.origin.x = contentViewLayoutMargin
+            textView.frame.origin.x = padding.left
             textView.frame.origin.y = statusBarHeight + 40
-            textView.frame.size.width -= contentViewLayoutMargin * 2
-            textView.frame.size.height -= (statusBarHeight + 40 + contentViewLayoutMargin)
+            textView.frame.size.width -= padding.lar
+            textView.frame.size.height -= (statusBarHeight + 40 + padding.top)
             return
         }
         
@@ -164,23 +164,23 @@ extension ELTextPoper {
         switch location {
         case .left, .right:
             if location == .left {
-                textView.frame.origin.x = contentViewLayoutMargin
+                textView.frame.origin.x = padding.left
             } else {
-                textView.frame.origin.x = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+                textView.frame.origin.x = padding.left + (isArrowed ? suggestionArrowsHeight : 0)
             }
-            textView.frame.origin.y = contentViewLayoutMargin
-            textView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
-            textView.frame.size.height -= (contentViewLayoutMargin * 2)
+            textView.frame.origin.y = padding.top
+            textView.frame.size.width -= (padding.lar + (isArrowed ? suggestionArrowsHeight : 0))
+            textView.frame.size.height -= padding.tab
         default:
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
             if containerView.frame.midY > refRect.midY {
-                textView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+                textView.frame.origin.y = padding.top + (isArrowed ? suggestionArrowsHeight : 0)
             } else {
-                textView.frame.origin.y = contentViewLayoutMargin
+                textView.frame.origin.y = padding.top
             }
-            textView.frame.origin.x = contentViewLayoutMargin
-            textView.frame.size.width -= (contentViewLayoutMargin * 2)
-            textView.frame.size.height -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+            textView.frame.origin.x = padding.left
+            textView.frame.size.width -= padding.lar
+            textView.frame.size.height -= (padding.tab + (isArrowed ? suggestionArrowsHeight : 0))
         }
     }
 }

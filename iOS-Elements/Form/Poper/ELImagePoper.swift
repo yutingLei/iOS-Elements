@@ -141,7 +141,7 @@ extension ELImagePoper {
     /// 设置主题颜色
     override func setTheme() {
         super.setTheme()
-        if containerTheme == .light {
+        if theme == .light {
             scrollView.backgroundColor = UIColor.white
             if showPageControl {
                 pageControl.isHidden = false
@@ -201,10 +201,10 @@ extension ELImagePoper {
         
         /// 如果是全屏
         if isFullScreen {
-            scrollView.frame.origin.x = contentViewLayoutMargin
+            scrollView.frame.origin.x = padding.top
             scrollView.frame.origin.y = statusBarHeight + 40
-            scrollView.frame.size.width -= contentViewLayoutMargin * 2
-            scrollView.frame.size.height -= (statusBarHeight + 40 + contentViewLayoutMargin)
+            scrollView.frame.size.width -= padding.tab
+            scrollView.frame.size.height -= (statusBarHeight + 40 + padding.top)
             return
         }
         
@@ -212,22 +212,22 @@ extension ELImagePoper {
         switch location {
         case .left, .right:
             if location == .left {
-                scrollView.frame.origin.x = contentViewLayoutMargin
+                scrollView.frame.origin.x = padding.left
             } else {
-                scrollView.frame.origin.x = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+                scrollView.frame.origin.x = padding.left + (isArrowed ? suggestionArrowsHeight : 0)
             }
-            scrollView.frame.origin.y = contentViewLayoutMargin
-            scrollView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
-            scrollView.frame.size.height -= (contentViewLayoutMargin * 2)
+            scrollView.frame.origin.y = padding.top
+            scrollView.frame.size.width -= (padding.lar + (isArrowed ? suggestionArrowsHeight : 0))
+            scrollView.frame.size.height -= padding.tab
         default:
             if containerView.frame.minY > screenWidth / 2 {
-                scrollView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+                scrollView.frame.origin.y = padding.top + (isArrowed ? suggestionArrowsHeight : 0)
             } else {
-                scrollView.frame.origin.y = contentViewLayoutMargin
+                scrollView.frame.origin.y = padding.top
             }
-            scrollView.frame.origin.x = contentViewLayoutMargin
-            scrollView.frame.size.width -= (contentViewLayoutMargin * 2)
-            scrollView.frame.size.height -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+            scrollView.frame.origin.x = padding.left
+            scrollView.frame.size.width -= padding.lar
+            scrollView.frame.size.height -= (padding.tab + (isArrowed ? suggestionArrowsHeight : 0))
         }
     }
     
@@ -263,7 +263,7 @@ extension ELImagePoper {
                     imageView.image = placeholderImage
                 } else {
                     let activityIndicator = UIActivityIndicatorView.init(frame: imageView.bounds)
-                    activityIndicator.style = containerTheme == .light ? .gray : .white
+                    activityIndicator.style = theme == .light ? .gray : .white
                     activityIndicator.startAnimating()
                     imageView.addSubview(activityIndicator)
                 }

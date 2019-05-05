@@ -177,7 +177,7 @@ extension ELTablePoper {
     /// 更新主题
     override func setTheme() {
         super.setTheme()
-        if containerTheme == .light {
+        if theme == .light {
             loadingView.style = .gray
             tableView.backgroundColor = .white
             tableView.separatorStyle = .none
@@ -208,7 +208,7 @@ extension ELTablePoper {
         let cellHeight: CGFloat = selectionStyle == .subtitle ? 50 : 35
         
         /// 如果设置了固定宽度或高度
-        if let fixedSize = fixedSizeOfContainerView {
+        if let fixedSize = fixedSize {
             if fixedSize.width != 0 {
                 contentSize.width = fixedSize.width
             }
@@ -275,10 +275,10 @@ extension ELTablePoper {
         
         /// 如果是全屏
         if isFullScreen {
-            tableView.frame.origin.x = contentViewLayoutMargin
+            tableView.frame.origin.x = padding.left
             tableView.frame.origin.y = statusBarHeight + 40
-            tableView.frame.size.width -= contentViewLayoutMargin * 2
-            tableView.frame.size.height -= (statusBarHeight + 40 + contentViewLayoutMargin)
+            tableView.frame.size.width -= padding.lar
+            tableView.frame.size.height -= (statusBarHeight + 40 + padding.top)
             return
         }
         
@@ -286,23 +286,23 @@ extension ELTablePoper {
         switch location {
         case .left, .right:
             if location == .left {
-                tableView.frame.origin.x = contentViewLayoutMargin
+                tableView.frame.origin.x = padding.left
             } else {
-                tableView.frame.origin.x = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+                tableView.frame.origin.x = padding.left + (isArrowed ? suggestionArrowsHeight : 0)
             }
-            tableView.frame.origin.y = contentViewLayoutMargin
-            tableView.frame.size.width -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
-            tableView.frame.size.height -= (contentViewLayoutMargin * 2)
+            tableView.frame.origin.y = padding.top
+            tableView.frame.size.width -= (padding.lar + (isArrowed ? suggestionArrowsHeight : 0))
+            tableView.frame.size.height -= padding.tab
         default:
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
             if containerView.frame.midY > refRect.midY {
-                tableView.frame.origin.y = contentViewLayoutMargin + (isContainedArrow ? suggestionArrowsHeight : 0)
+                tableView.frame.origin.y = padding.top + (isArrowed ? suggestionArrowsHeight : 0)
             } else {
-                tableView.frame.origin.y = contentViewLayoutMargin
+                tableView.frame.origin.y = padding.top
             }
-            tableView.frame.origin.x = contentViewLayoutMargin
-            tableView.frame.size.width -= (contentViewLayoutMargin * 2)
-            tableView.frame.size.height -= (contentViewLayoutMargin * 2 + (isContainedArrow ? suggestionArrowsHeight : 0))
+            tableView.frame.origin.x = padding.left
+            tableView.frame.size.width -= padding.lar
+            tableView.frame.size.height -= (padding.tab + (isArrowed ? suggestionArrowsHeight : 0))
         }
     }
 }
@@ -417,7 +417,7 @@ class ELTablePoperCell: UITableViewCell {
     }()
     
     /// 主题
-    var theme: ELPoper.ContainerTheme = .light
+    var theme: ELPoper.Theme = .light
     
     /// cell类型
     var style: CellStyle! {
