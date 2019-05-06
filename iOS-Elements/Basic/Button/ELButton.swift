@@ -112,6 +112,9 @@ public class ELButton: UIControl {
     /// 管理图片
     private lazy var images = [UInt: UIImage]()
     
+    /// 管理倒计时定时器
+    private var timerSource: DispatchSourceTimer?
+    
     /// Initialization
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -124,6 +127,11 @@ public class ELButton: UIControl {
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    deinit {
+        timerSource?.cancel()
+        timerSource = nil
     }
 }
 
@@ -310,11 +318,12 @@ public extension ELButton {
         
         /// 配置定时器
         var count = seconds
-        let timerSource = DispatchSource.makeTimerSource()
-        timerSource.schedule(wallDeadline: .now(), repeating: .seconds(1), leeway: .seconds(0))
-        timerSource.setEventHandler {[unowned self] in
+        timerSource = DispatchSource.makeTimerSource()
+        timerSource?.schedule(wallDeadline: .now(), repeating: .seconds(1), leeway: .seconds(0))
+        timerSource?.setEventHandler {[unowned self] in
             if count <= 0 {
-                timerSource.cancel()
+                self.timerSource?.cancel()
+                self.timerSource = nil
                 DispatchQueue.main.async {
                     self.isEnabled = true
                     self.setTitle(originTitle, for: .normal)
@@ -329,7 +338,7 @@ public extension ELButton {
         }
         
         /// 启动定时器
-        timerSource.resume()
+        timerSource?.resume()
     }
 }
 
