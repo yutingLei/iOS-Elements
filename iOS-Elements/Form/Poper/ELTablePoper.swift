@@ -107,7 +107,11 @@ public class ELTablePoper: ELPoper {
     public var selectedColor: UIColor?
     
     /// 需要展示的内容
-    public var contents: [Any]?
+    public var contents: [Any]? {
+        willSet {
+            shouldupdateContentView = true
+        }
+    }
     
     /// 取值所需的key, 和contents息息相关
     /// 如果contents是一个数据字典, 那么keysToContents就是字典中的键的名称
