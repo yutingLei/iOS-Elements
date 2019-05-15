@@ -111,6 +111,9 @@ public class ELTextInput: UIView {
     /// 异步(远程)输入建议
     public var asyncFetchSuggestions: ELTextInputFetchAsync?
     
+    /// 是否在输入框聚焦时触发(默认: false)
+    public var onStartingFetchWhenFocused = false
+    
     /// 输入建议选中代理
     public var fetchTableDelegate: ELTablePoperProtocol? {
         get { return _suggestionsTable.delegate as? ELTablePoperProtocol }
@@ -411,6 +414,11 @@ extension ELTextInput {
                 self._placeholderLabel.frame  = CGRect(x: x, y: y, width: w, height: h * 0.3)
             }
         }
+        
+        /// 是否触发动画
+        if (asyncFetchSuggestions != nil || syncFetchSuggestions != nil) && onStartingFetchWhenFocused {
+            onCreateFetchTimer()
+        }
     }
     
     /// 输入框变为不聚焦
@@ -458,13 +466,9 @@ extension ELTextInput: ELTablePoperProtocol {
             
             /// 执行异步输入建议
         else if let asyncFunc = asyncFetchSuggestions {
-            if let _ = fetchDebounceTimeInterval {
-                onCreateFetchTimer()
-            } else {
-                asyncFunc(field.text, onFetchResultsKeys) {[unowned self] contents in
-                    self._suggestionsTable.contents = contents
-                    self._suggestionsTable.show()
-                }
+            asyncFunc(field.text, onFetchResultsKeys) {[unowned self] contents in
+                self._suggestionsTable.contents = contents
+                self._suggestionsTable.show()
             }
         }
         
