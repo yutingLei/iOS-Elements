@@ -94,8 +94,17 @@ public class ELTablePoper: ELPoper {
     /// 多选
     public var isMultipleSelection: Bool = false
     
-    /// 显示加载动画指示器，当内容为空时.
-    public var showActivityIndicatorWhenNullContents: Bool = true
+    /// 当内容为空时,显示提示语(默认: true)
+    public var showTipsWhenNullContents: Bool = true
+    
+    /// 内容为空的提示语(默认: "未找到数据")
+    public var tipText: String? {
+        get { return tipsLabel.text }
+        set { tipsLabel.text = newValue ?? "未找到数据" }
+    }
+    
+    /// 当加载类容时,显示加载动画(默认: true)
+    public var showActivityIndicatorWhenLoadingContents: Bool = true
     
     /// 对于内容样式描述(默认: .pureText)
     public var contentStyle: ContentStyle = .pureText
@@ -141,6 +150,18 @@ public class ELTablePoper: ELPoper {
         return active
     }()
     
+    /// 提示语视图
+    lazy var tipsLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 14)
+        label.textColor = ELColor.secondaryText
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.text = "未找到数据"
+        containerView.effectsView.addSubview(label)
+        return label
+    }()
+    
     /// 是否更新内容视图
     var shouldupdateContentView = true {
         willSet {
@@ -183,6 +204,9 @@ public extension ELTablePoper {
         /// 是否显示加载动画
         setLoadingView()
         
+        /// 是否显示提示语
+        setTipLabel()
+        
         setTheme()
     }
 }
@@ -191,17 +215,32 @@ extension ELTablePoper {
 
     /// 创建加载视图
     func setLoadingView() {
-        if contents == nil && showActivityIndicatorWhenNullContents {
-            tableView.isHidden = true
-            loadingView.isHidden = false
-            loadingView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
-            loadingView.center = CGPoint(x: containerView.bounds.width / 2, y: containerView.bounds.height / 2)
-            loadingView.startAnimating()
-        } else {
+        if showActivityIndicatorWhenLoadingContents {
+            if contents == nil {
+                tableView.isHidden = true
+                loadingView.isHidden = false
+                loadingView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+                loadingView.center = CGPoint(x: containerView.bounds.width / 2, y: containerView.bounds.height / 2)
+                loadingView.startAnimating()
+                return
+            }
             loadingView.stopAnimating()
             loadingView.isHidden = true
             tableView.isHidden = false
-            tableView.reloadData()
+        }
+    }
+    
+    /// 创建提示视图
+    func setTipLabel() {
+        if showTipsWhenNullContents {
+            if contents != nil && contents?.count == 0 {
+                tableView.isHidden = true
+                tipsLabel.isHidden = false
+                tipsLabel.frame = tableView.frame
+                return
+            }
+            tipsLabel.isHidden = true
+            tableView.isHidden = false
         }
     }
 }
@@ -231,7 +270,12 @@ extension ELTablePoper {
         }
         
         /// 内容为空时且showActivityIndicatorWhenNullContents = true，显示加载动画
-        if contents == nil && showActivityIndicatorWhenNullContents {
+        if showActivityIndicatorWhenLoadingContents && contents == nil {
+            return CGSize(width: 120, height: 120)
+        }
+        
+        /// 当showTipsWhenNullContents = true，并且数据个数为0时，显示提示语
+        if showTipsWhenNullContents && contents != nil && contents?.count == 0 {
             return CGSize(width: 120, height: 120)
         }
         

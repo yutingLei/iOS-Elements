@@ -130,7 +130,6 @@ public class ELTextInput: UIView {
     }
     private lazy var _suggestionsTable: ELTablePoper = {
         let poper = ELTablePoper(refrenceView: field, withDelegate: self)
-        poper.arrowAlignment = .right
         poper.contentLayout = .center
         poper.isContrasted = false
         return poper
