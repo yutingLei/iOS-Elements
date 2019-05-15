@@ -113,7 +113,7 @@ public class ELTextInput: UIView {
     
     /// 输入建议选中代理
     public var fetchTableDelegate: ELTablePoperProtocol? {
-        get { return _suggestionsTable.delegate }
+        get { return _suggestionsTable.delegate as? ELTablePoperProtocol }
         set { _suggestionsTable.delegate = newValue }
     }
     
