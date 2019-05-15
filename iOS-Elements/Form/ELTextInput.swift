@@ -111,6 +111,12 @@ public class ELTextInput: UIView {
     /// 异步(远程)输入建议
     public var asyncFetchSuggestions: ELTextInputFetchAsync?
     
+    /// 输入建议选中代理
+    public var fetchTableDelegate: ELTablePoperProtocol? {
+        get { return _suggestionsTable.delegate }
+        set { _suggestionsTable.delegate = newValue }
+    }
+    
     /// 输入建议调用间隔时间
     public var fetchDebounceTimeInterval: TimeInterval?
     private var _timeInterval: TimeInterval?
