@@ -201,11 +201,8 @@ public extension ELTablePoper {
         calculateContainerViewsRect()
         calculateContentViewsRect()
         
-        /// 是否显示加载动画
-        setLoadingView()
-        
-        /// 是否显示提示语
-        setTipLabel()
+        /// 是否显示加载动画/提示语
+        setShowsView()
         
         setTheme()
     }
@@ -214,34 +211,41 @@ public extension ELTablePoper {
 extension ELTablePoper {
 
     /// 创建加载视图
-    func setLoadingView() {
+    func setShowsView() {
         if showActivityIndicatorWhenLoadingContents {
             if contents == nil {
                 tableView.isHidden = true
                 loadingView.isHidden = false
+                if showTipsWhenNullContents {
+                    tipsLabel.isHidden = true
+                }
                 loadingView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
                 loadingView.center = CGPoint(x: containerView.bounds.width / 2, y: containerView.bounds.height / 2)
                 loadingView.startAnimating()
                 return
             }
-            loadingView.stopAnimating()
-            loadingView.isHidden = true
-            tableView.isHidden = false
         }
-    }
-    
-    /// 创建提示视图
-    func setTipLabel() {
+        
         if showTipsWhenNullContents {
             if contents != nil && contents?.count == 0 {
                 tableView.isHidden = true
+                if showActivityIndicatorWhenLoadingContents {
+                    loadingView.isHidden = true
+                }
                 tipsLabel.isHidden = false
                 tipsLabel.frame = tableView.frame
                 return
             }
-            tipsLabel.isHidden = true
-            tableView.isHidden = false
         }
+        
+        if showActivityIndicatorWhenLoadingContents {
+            loadingView.isHidden = true
+        }
+        
+        if showTipsWhenNullContents {
+            tipsLabel.isHidden = true
+        }
+        tableView.isHidden = false
     }
 }
 
@@ -251,11 +255,21 @@ extension ELTablePoper {
     override func setTheme() {
         super.setTheme()
         if theme == .light {
-            loadingView.style = .gray
+            if showActivityIndicatorWhenLoadingContents {
+                loadingView.style = .gray
+            }
+            if showTipsWhenNullContents {
+                tipsLabel.textColor = ELColor.secondaryText
+            }
             tableView.backgroundColor = .white
             tableView.separatorStyle = .none
         } else {
-            loadingView.style = .white
+            if showActivityIndicatorWhenLoadingContents {
+                loadingView.style = .white
+            }
+            if showTipsWhenNullContents {
+                tipsLabel.textColor = ELColor.placeholderText
+            }
             tableView.backgroundColor = ELColor.rgb(54, 55, 56)
 //            tableView.separatorStyle = .singleLine
 //            tableView.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)

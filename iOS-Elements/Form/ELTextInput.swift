@@ -471,6 +471,7 @@ extension ELTextInput: ELTablePoperProtocol {
             
             /// 执行异步输入建议
         else if let asyncFunc = asyncFetchSuggestions {
+            _suggestionsTable.show()
             asyncFunc(field.text, onFetchResultsKeys) {[unowned self] contents in
                 self._suggestionsTable.contents = contents
                 self._suggestionsTable.show()
