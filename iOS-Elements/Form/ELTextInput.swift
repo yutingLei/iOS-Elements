@@ -124,9 +124,14 @@ public class ELTextInput: UIView {
     public var fetchDebounceTimeInterval: TimeInterval?
     private var _timeInterval: TimeInterval?
     
-    /// 输入建议展示视图
+    /// 输入建议展示视图(懒加载,在访问时才会创建)
+    public var suggestionsTablePoper: ELTablePoper {
+        get { return _suggestionsTable }
+    }
     private lazy var _suggestionsTable: ELTablePoper = {
         let poper = ELTablePoper(refrenceView: field, withDelegate: self)
+        poper.arrowAlignment = .right
+        poper.contentLayout = .center
         poper.isContrasted = false
         return poper
     }()
@@ -417,6 +422,7 @@ extension ELTextInput {
         
         /// 是否触发动画
         if (asyncFetchSuggestions != nil || syncFetchSuggestions != nil) && onStartingFetchWhenFocused {
+            _suggestionsTable.show()
             onCreateFetchTimer()
         }
     }

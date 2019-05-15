@@ -40,6 +40,7 @@ public extension ELPoper {
     enum Location {
         case left
         case right
+        case top
         case auto
     }
     
@@ -334,7 +335,7 @@ extension ELPoper {
         if isFullScreen || isFullWidth {
             containerView.frame.origin = CGPoint.zero
             if isFullWidth {
-                if refRect.midY >= screenHeight / 2 {
+                if refRect.midY >= screenHeight / 2 || location == .top {
                     containerView.frame.origin.y = refRect.minY - containerView.frame.height
                 } else {
                     containerView.frame.origin.y = refRect.maxY
@@ -363,7 +364,7 @@ extension ELPoper {
             } else {
                 containerView.frame.origin.x = refRect.midX - (containerView.frame.width / 2)
             }
-            if refRect.midY >= screenHeight / 2 {
+            if refRect.midY >= screenHeight / 2 || location == .top {
                 containerView.frame.origin.y = refRect.minY - containerView.frame.height
             } else {
                 containerView.frame.origin.y = refRect.maxY
@@ -413,7 +414,7 @@ extension ELPoper {
         default:
             /// 高度适配
             if containerView.frame.origin.y < (statusBarHeight + margin.top) {
-                containerView.frame.size.height = (statusBarHeight + margin.top) - containerView.frame.origin.y
+                containerView.frame.size.height -= ((statusBarHeight + margin.top) - containerView.frame.origin.y)
                 containerView.frame.origin.y = statusBarHeight + margin.top
             } else if containerView.frame.maxY > screenHeight {
                 containerView.frame.size.height -= (containerView.frame.maxY - (screenHeight - margin.bottom))
