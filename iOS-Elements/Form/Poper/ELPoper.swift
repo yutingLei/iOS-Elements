@@ -100,7 +100,7 @@ public class ELPoper: UIView {
     /// 设置箭头高度(默认：8)
     public var suggestionArrowsHeight: CGFloat = 8
     
-    /// 内容视图固定大小, 当isFullScreen/isFullWidth = true时，设置此属性无效
+    /// 容器视图固定大小, 当isFullScreen/isFullWidth = true时，设置此属性无效
     /// 如果设置的size中宽或高为0,表示根据内容自定义宽度或高度
     public var fixedSize: CGSize?
     
@@ -185,11 +185,11 @@ extension ELPoper {
         /// rt: rightTop    rb: rightBottom     rc: rightCenter
         let lt = CGPoint.zero
         let lb = CGPoint(x: 0, y: containerView.bounds.maxY)
-        let lc = CGPoint(x: 0, y: containerView.bounds.midY)
+        let lc = CGPoint(x: 0, y: refRect.midY - containerView.frame.minY)
         
         let rt = CGPoint(x: containerView.bounds.maxX, y: 0)
         let rb = CGPoint(x: containerView.bounds.maxX, y: containerView.bounds.maxY)
-        let rc = CGPoint(x: containerView.bounds.maxX, y: containerView.bounds.midY)
+        let rc = CGPoint(x: containerView.bounds.maxX, y: refRect.midY - containerView.frame.minY)
         
         let bezierPath = UIBezierPath()
         bezierPath.lineWidth = 1
@@ -446,10 +446,17 @@ extension ELPoper {
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
             var fromRect = containerView.bounds
             let toRect = containerView.bounds
-            if containerView.frame.midY <= refRect.midY {
-                fromRect.origin.y = fromRect.height
+            if location == .left {
+                fromRect.origin.x = fromRect.maxX
+                fromRect.size.width = 0
+            } else if location == .right {
+                fromRect.size.width = 0
+            } else {
+                if containerView.frame.midY <= refRect.midY {
+                    fromRect.origin.y = fromRect.height
+                }
+                fromRect.size.height = 0
             }
-            fromRect.size.height = 0
             containerView.effectsView.frame = fromRect
             UIView.animate(withDuration: 0.35, animations: {[unowned self] in
                 self.containerView.effectsView.frame = toRect
@@ -467,10 +474,17 @@ extension ELPoper {
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
             let fromRect = containerView.bounds
             var toRect = containerView.bounds
-            if containerView.frame.midY <= refRect.midY {
-                toRect.origin.y = fromRect.height
+            if location == .left {
+                toRect.origin.x = toRect.maxX
+                toRect.size.width = 0
+            } else if location == .right {
+                toRect.size.width = 0
+            } else {
+                if containerView.frame.midY <= refRect.midY {
+                    toRect.origin.y = fromRect.height
+                }
+                toRect.size.height = 0
             }
-            toRect.size.height = 0
             containerView.effectsView.frame = fromRect
             UIView.animate(withDuration: 0.35, animations: {[unowned self] in
                 self.containerView.effectsView.frame = toRect

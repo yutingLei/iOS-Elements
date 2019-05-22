@@ -84,7 +84,7 @@ public extension ELTextPoper {
         ///     2.根据内容所需大小计算容器视图大小
         ///     3.计算容器视图大小及位置，并且过程中会适配屏幕
         ///     4.此时根据容器视图大小计算内容视图大小及位置
-        calculateContainerViewsSize(with: calculateContentViewsSize(with: 150))
+        calculateContainerViewsSize(with: calculateContentViewsSize(with: 0))
         calculateContainerViewsRect()
         calculateContentViewsRect()
         setTextView()
@@ -120,31 +120,58 @@ extension ELTextPoper {
             return CGSize.zero
         }
         
-        var limitWidth: CGFloat = width
-        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
-        if location == .left {
-            limitWidth = refRect.minX - padding.lar - suggestionArrowsHeight - margin.left
-        } else if location == .right {
-            limitWidth = screenWidth - margin.right - padding.lar - suggestionArrowsHeight - refRect.maxX
+        /// Has fixed size
+        var contentSize = CGSize.zero
+        if let fixedSize = fixedSize {
+            if fixedSize.width != 0 {
+                contentSize.width = fixedSize.width
+            }
+            if fixedSize.height != 0 {
+                contentSize.height = fixedSize.height
+            }
         }
         
-        switch location {
-        case .left, .right:
-            if limitWidth > 0, let text = text {
-                let height = text.height(withLimit: limitWidth, fontSize: font.pointSize)
-                return CGSize(width: limitWidth, height: height)
+        contentSize.width = contentSize.width > 0 ? contentSize.width : width
+        let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
+        
+        /// 计算宽度
+        if contentSize.width <= 0 {
+            if location == .left {
+                contentSize.width = refRect.minX - padding.lar - suggestionArrowsHeight - margin.left
+            } else if location == .right {
+                contentSize.width = screenWidth - margin.right - padding.lar - suggestionArrowsHeight - refRect.maxX
+            } else {
+                contentSize.width = screenWidth - padding.lar - margin.lar
             }
-        default:
-            if let text = text {
-                let height = text.height(withLimit: limitWidth, fontSize: font.pointSize)
-                /// 当高度大于宽度时，重新计算
-                if height > width {
-                    return calculateContentViewsSize(with: limitWidth + font.pointSize * 4)
-                }
-                return CGSize(width: width, height: height)
+        } else {
+            if location == .left || location == .right {
+                contentSize.width -= (padding.lar + suggestionArrowsHeight)
+            } else {
+                contentSize.width -= padding.lar
             }
         }
-        return CGSize.zero
+        
+        /// 根据宽度计算高度
+        if contentSize.height <= 0 {
+            switch location {
+            case .left, .right:
+                if contentSize.width > 0, let text = text {
+                    contentSize.height = text.height(withLimit: contentSize.width, fontSize: font.pointSize) + padding.tab
+                }
+            default:
+                if let text = text {
+                    let height = text.height(withLimit: contentSize.width, fontSize: font.pointSize)
+                    /// 当高度大于宽度时，重新计算
+                    if contentSize.width <= 0 && height > width {
+                        return calculateContentViewsSize(with: contentSize.width + font.pointSize * 4)
+                    }
+                    contentSize.height = height
+                }
+            }
+        } else {
+            contentSize.height -= (suggestionArrowsHeight + padding.tab)
+        }
+        return contentSize
     }
     
     /// 计算内容真实大小及位置
