@@ -230,12 +230,13 @@ private extension ELButton {
     
     /// 设置颜色
     func setColor(for state: State = .normal) {
-        backgroundColor = themes[state.rawValue]?.backgroundColor
-        layer.borderColor = themes[state.rawValue]?.borderColor?.cgColor
+        guard let theme = themes[state.rawValue] else { return }
+        backgroundColor = theme.backgroundColor
+        layer.borderColor = theme.borderColor?.cgColor
         layer.borderWidth = layer.borderColor == nil ? 0 : 1
         
-        titleLabel?.textColor = themes[state.rawValue]?.textColor
-        if let imageColor = themes[state.rawValue]?.imageColor {
+        titleLabel?.textColor = theme.textColor
+        if let imageColor = theme.imageColor {
             imageView?.image = imageView?.image?.stroked(by: imageColor)
         }
     }
