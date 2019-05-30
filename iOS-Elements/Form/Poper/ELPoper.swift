@@ -355,11 +355,11 @@ extension ELPoper {
         default:
             if containerView.frame.width < refRect.width {
                 if arrowAlignment == .left {
-                    containerView.frame.origin.x = refRect.minX
+                    containerView.frame.origin.x = refRect.minX == 0 ? padding.left : refRect.minX
                 } else if arrowAlignment == .center {
                     containerView.frame.origin.x = refRect.midX - (containerView.frame.width / 2)
                 } else {
-                    containerView.frame.origin.x = refRect.maxX - containerView.frame.width
+                    containerView.frame.origin.x = refRect.maxX == screenWidth ? (refRect.maxX - padding.right) : (refRect.maxX - containerView.frame.width)
                 }
             } else {
                 containerView.frame.origin.x = refRect.midX - (containerView.frame.width / 2)
