@@ -42,13 +42,7 @@ public class ELImagePoper: ELPoper {
     public var isZoomedWhenFullScreened = false {
         willSet {
             scrollView.bouncesZoom = newValue
-        }
-    }
-    
-    /// 缩放级别
-    public var zoomScale: CGFloat? {
-        willSet {
-            scrollView.zoomScale = newValue ?? 1
+            scrollView.maximumZoomScale = newValue ? 3 : 1
         }
     }
     
