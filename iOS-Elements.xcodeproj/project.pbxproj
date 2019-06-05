@@ -24,7 +24,7 @@
 		84FCDDB8225C309F00FC1561 /* ELTextInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDB7225C309F00FC1561 /* ELTextInput.swift */; };
 		84FCDDBA225C7D0900FC1561 /* ELPoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDB9225C7D0900FC1561 /* ELPoper.swift */; };
 		84FCDDBC226063CC00FC1561 /* ELNumberInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */; };
-		84FCDDBE226415CF00FC1561 /* ELImagePoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBD226415CF00FC1561 /* ELImagePoper.swift */; };
+		84FCDDBE226415CF00FC1561 /* ELImagePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBD226415CF00FC1561 /* ELImagePreview.swift */; };
 		84FCDDC022644F8000FC1561 /* ELTextPoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDBF22644F8000FC1561 /* ELTextPoper.swift */; };
 		84FCDDC422646ECB00FC1561 /* ELTablePoper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FCDDC322646ECB00FC1561 /* ELTablePoper.swift */; };
 /* End PBXBuildFile section */
@@ -50,7 +50,7 @@
 		84FCDDB7225C309F00FC1561 /* ELTextInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELTextInput.swift; sourceTree = "<group>"; };
 		84FCDDB9225C7D0900FC1561 /* ELPoper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ELPoper.swift; sourceTree = "<group>"; };
 		84FCDDBB226063CC00FC1561 /* ELNumberInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELNumberInput.swift; sourceTree = "<group>"; };
-		84FCDDBD226415CF00FC1561 /* ELImagePoper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELImagePoper.swift; sourceTree = "<group>"; };
+		84FCDDBD226415CF00FC1561 /* ELImagePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELImagePreview.swift; sourceTree = "<group>"; };
 		84FCDDBF22644F8000FC1561 /* ELTextPoper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELTextPoper.swift; sourceTree = "<group>"; };
 		84FCDDC322646ECB00FC1561 /* ELTablePoper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ELTablePoper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -176,7 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				84FCDDB9225C7D0900FC1561 /* ELPoper.swift */,
-				84FCDDBD226415CF00FC1561 /* ELImagePoper.swift */,
+				84FCDDBD226415CF00FC1561 /* ELImagePreview.swift */,
 				84FCDDBF22644F8000FC1561 /* ELTextPoper.swift */,
 				84FCDDC322646ECB00FC1561 /* ELTablePoper.swift */,
 			);
@@ -305,7 +305,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				84FCDDBC226063CC00FC1561 /* ELNumberInput.swift in Sources */,
-				84FCDDBE226415CF00FC1561 /* ELImagePoper.swift in Sources */,
+				84FCDDBE226415CF00FC1561 /* ELImagePreview.swift in Sources */,
 				842348EE2265CF180098F011 /* ELSelect.swift in Sources */,
 				846F56A82255E60000ED27CF /* ELButtonTheme.swift in Sources */,
 				84FCDDBA225C7D0900FC1561 /* ELPoper.swift in Sources */,

@@ -349,41 +349,38 @@ class ViewController: UIViewController {
 extension ViewController: ELPoperProtocol {
     @objc func onTouch(_ button: UIButton) {
         if button.tag == 11001 {
-//                        let imagePoper = ELImagePoper(refrenceView: button, withDelegate: nil)
-//                        imagePoper.images = [ELIcon.get(.search), ELIcon.get(.add), ELIcon.get(.bell)] as! [UIImage]
-//                        imagePoper.showPageControl = true
-//                        imagePoper.isFullScreen = true
-//                        imagePoper.show()
+            let imagePreview = ELImagePreview([ELIcon.get(.search), ELIcon.get(.add), ELIcon.get(.bell)] as! [UIImage])
+            imagePreview.makeVisiable()
             
 //            let textPoper = ELTextPoper.init(refrenceView: button, withDelegate: nil)
 //            textPoper.text = "动画看起来是用来显示一段连续的运动过程，但实际上当在固定位置上展示像素的时候并不能做到这一点。一般来说这种显示都无法做到连续的移动，能做的仅仅是足够快地展示一系列静态图片，只是看起来像是做了运动。"
 //            textPoper.animationStyle = .unfold
 //            textPoper.show()
-            
-            let tablePoper = ELTablePoper.init(refrenceView: button, withDelegate: self)
-            tablePoper.contents =  [[
-                "value": "yizhi",
-                "label": "一致"
-                ], [
-                    "value": "fankui",
-                    "label": "反馈"
-                ], [
-                    "value": "xiaolv",
-                    "label": "效率"
-                ], [
-                    "value": "动画看起来是用来显示一段连续的运动过程",
-                    "label": "可控",
-                    "disabled": true
-                ]]
-            tablePoper.isMultipleSelection = true
-            tablePoper.selectedColor = UIColor.orange
-            tablePoper.isArrowed = true
-            tablePoper.contentStyle = .pureText
-            tablePoper.keysToContents = ["value"]
-            tablePoper.contentLayout = .center
-            tablePoper.arrowAlignment = .right
-            tablePoper.theme = .dark
-            tablePoper.show()
+//
+//            let tablePoper = ELTablePoper.init(refrenceView: button, withDelegate: self)
+//            tablePoper.contents =  [[
+//                "value": "yizhi",
+//                "label": "一致"
+//                ], [
+//                    "value": "fankui",
+//                    "label": "反馈"
+//                ], [
+//                    "value": "xiaolv",
+//                    "label": "效率"
+//                ], [
+//                    "value": "动画看起来是用来显示一段连续的运动过程",
+//                    "label": "可控",
+//                    "disabled": true
+//                ]]
+//            tablePoper.isMultipleSelection = true
+//            tablePoper.selectedColor = UIColor.orange
+//            tablePoper.isArrowed = true
+//            tablePoper.contentStyle = .pureText
+//            tablePoper.keysToContents = ["value"]
+//            tablePoper.contentLayout = .center
+//            tablePoper.arrowAlignment = .right
+//            tablePoper.theme = .dark
+//            tablePoper.show()
         }
     }
     
