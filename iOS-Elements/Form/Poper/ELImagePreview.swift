@@ -42,6 +42,9 @@ public class ELImagePreview: UIView {
     /// 最大放大倍数(3)
     public var maxZoomScale: CGFloat = 3
     
+    /// 风格样式
+    public var style: Style = .light { didSet { setStyle() } }
+    
     /// 初始化实例
     ///
     public init(_ images: [UIImage]) {
@@ -87,6 +90,15 @@ private extension ELImagePreview {
             cell.maximumZoomScale = maxZoomScale
             _container.addSubview(cell)
             rect.origin.x += screenWidth
+        }
+    }
+    
+    /// 设置风格
+    func setStyle() {
+        backgroundColor = style == .light ? .white : .black
+        _container.backgroundColor = style == .light ? .white : .black
+        for view in _container.subviews {
+            view.backgroundColor = style == .light ? .white : .black
         }
     }
 }
