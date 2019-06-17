@@ -467,8 +467,8 @@ extension ELPoper {
     /// Animation for hiding
     func hideAnimate(_ completed: ((Bool) -> Void)?) {
         if animationStyle == .fade {
-            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
-                self.alpha = 0.1
+            UIView.animate(withDuration: 0.35, animations: {[weak self] in
+                self?.alpha = 0.1
             }, completion: completed)
         } else {
             let refRect = refrenceView.convert(refrenceView.bounds, to: UIApplication.shared.keyWindow)
@@ -486,8 +486,8 @@ extension ELPoper {
                 toRect.size.height = 0
             }
             containerView.effectsView.frame = fromRect
-            UIView.animate(withDuration: 0.35, animations: {[unowned self] in
-                self.containerView.effectsView.frame = toRect
+            UIView.animate(withDuration: 0.35, animations: {[weak self] in
+                self?.containerView.effectsView.frame = toRect
             }, completion: completed)
         }
     }
@@ -536,9 +536,11 @@ public extension ELPoper {
                     unowned let weakSelf = self
                     delegate?.onHidingPoper?(weakSelf)
                     
-                    hideAnimate {[unowned self] _ in
+                    hideAnimate {[weak self] _ in
                         view.removeFromSuperview()
-                        self.delegate?.onHiddenPoper?(weakSelf)
+                        if let strongSelf = self {
+                            strongSelf.delegate?.onHiddenPoper?(strongSelf)
+                        }
                     }
                 }
             }
